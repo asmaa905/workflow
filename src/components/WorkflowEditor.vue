@@ -4,11 +4,11 @@ import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { MarkerType } from '@vue-flow/core'
 import { initialEdges, initialNodes } from './initial-elements.js'
-
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import RhombusNode from './RhombusNode.vue';
 import RectangleNode from './RectangleNode.vue';
+
 
 const props = defineProps({
   initialNodes: {
@@ -66,13 +66,10 @@ const props = defineProps({
 
 const emit = defineEmits(['update']);
 
-const { onInit, addEdges, addNodes, fitView, removeEdges, removeNodes } = useVueFlow()
+const { onInit, addEdges, addNodes, fitView, removeEdges, removeNodes, onConnect } = useVueFlow()
 
 const nodes = ref([]);
 const edges = ref([]);
-
-// const nodes = ref([...props.initialNodes]);
-// const edges = ref([...props.initialEdges]);
 const dark = ref(false);
 const activeEdgeId = ref(null);
 const showShapeOptions = ref(false);
@@ -84,12 +81,28 @@ const nodeTypes = {
   rhombus: RhombusNode,
   rectangle: RectangleNode
 };
+
+// Add this connection handler
+const onConnectHandler = (params) => {
+  const newEdge = {
+    ...params,
+    id: `edge-${params.source}-${params.target}-${Date.now()}`,
+    type: 'smoothstep',
+    label: '+',
+    labelStyle: { fill: 'white', fontSize: '14px', fontWeight: 'bold' },
+    labelBgStyle: { fill: '#ccc', rx: '50%', ry: '50%', width: '25px', height: '25px' }
+  };
+  addEdges([newEdge]);
+};
+
 // Watch for changes in nodes and edges and emit them
 watch([nodes, edges], () => {
   if (!props.readonly) {
     emit('update', { nodes: nodes.value, edges: edges.value });
   }
 }, { deep: true });
+
+// Rest of your existing code...
 
 // Initialize with props when component mounts
 
@@ -272,7 +285,10 @@ const addRhombusNewNode = () => {
       id: `edge-${edge.source}-${rhombusId}`,
       source: edge.source,
       target: rhombusId,
-      type: 'smoothstep'
+          type: 'smoothstep',
+      label: '+',
+      labelStyle: { fill: 'white', fontSize: '14px', fontWeight: 'bold' },
+      labelBgStyle: { fill: '#ccc', rx: '50%', ry: '50%', width: '25px', height: '25px' }
     },
     {
       id: `edge-${rhombusId}-${leftRectId}-left`,
@@ -385,17 +401,22 @@ onInit((instance) => {
       @edge-click="handleEdgeClick"
       @node-drag-stop="onNodeDragStop"
       :nodes-draggable="!readonly"
-      :nodes-connectable="!readonly"
+      :nodes-connectable="!readonly" 
       :edges-updatable="!readonly"
+        :connection-mode="!readonly ? 'strict' : false"
+      @connect="onConnectHandler"
+      :connection-radius="20"
     >
       <Background pattern-color="#aaa" :gap="16" />
-      
+      <!-- Rest of your template -->
+     <!-- Rest of your template... -->
+   
       <!-- Node edit modal -->
       <div v-if="editingNodeId" class="node-edit-modal">
         <input v-model="nodeLabel" class="node-label-input" />
         <button @click="saveNodeLabel" class="save-label-btn">Save</button>
-      </div>
-      
+      </div>      
+       
       <!-- Shape selection options -->
       <div 
         v-if="showShapeOptions && !readonly"

@@ -1,5 +1,6 @@
 <script setup>
 import { onMounted, onUnmounted } from 'vue';
+import { Handle, Position } from '@vue-flow/core'
 
 const props = defineProps(['id', 'data', 'type']);
 const emit = defineEmits(['editNode', 'deleteNode']);
@@ -36,12 +37,11 @@ onUnmounted(() => {
 });
 
 </script>
-
-
 <template>
-  <div class="rectangle-node"     @click="handleEditText">
-
-    <div class="node-content">
+  <div class="node-container rectangle-node"  @click="handleEditText">
+    <Handle type="source" :position="Position.Right" />
+    <Handle type="target" :position="Position.Left" />
+   <div class="node-content">
       <div class="node-label">{{ data.label }}</div>
       <button 
         class="delete-btn w-[25px] h-[25px]" 
@@ -55,9 +55,10 @@ onUnmounted(() => {
       </button>
     </div>
         <div class="plus-icon">✍🏻</div>
-
   </div>
 </template>
+
+
 
 <style scoped>
 .rectangle-node {
