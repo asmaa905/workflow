@@ -20,11 +20,7 @@ const handleEditText = (e) => {
   emit('editNode', props.id, props.data.label);
 };
 
-    // handleDelete() {
-    //   if (this.deleteNode) {
-    //     this.deleteNode(this.id);
-    //   }
-    // }
+
 
 const handleDelete = (e) => {
   e.preventDefault();

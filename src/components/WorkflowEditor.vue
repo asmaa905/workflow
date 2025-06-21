@@ -167,10 +167,6 @@ const saveNodeLabel = () => {
     nodeLabel.value = '';
   }
 }
-const onNodeDragStop = (event) => {
-  // Handle node drag stop if needed
-  console.log('Node drag stopped', event);
-};
 const deleteNode = async (nodeId) => {
   // Prevent deleting start or end nodes
   if (nodeId === '1' || nodeId === '2') {
@@ -178,26 +174,24 @@ const deleteNode = async (nodeId) => {
     return;
   }
 
-  console.log('Deleting node:', nodeId);
-  
   // Find the node to be deleted
   const nodeToDelete = nodes.value.find(n => n.id === nodeId);
   if (!nodeToDelete) {
     console.error('Node not found:', nodeId);
     return;
   }
-  
+
   // Find all edges connected to this node
   const connectedEdges = edges.value.filter(
     e => e.source === nodeId || e.target === nodeId
   );
-  
-  // Find incoming edge (edge where this node is the target)
+
+  // find incoming edge (edge where this node is the target)
   const incomingEdge = edges.value.find(e => e.target === nodeId);
-  // Find outgoing edges (edges where this node is the source)
+  // find outgoing edges (edges where this node is the source)
   const outgoingEdges = edges.value.filter(e => e.source === nodeId);
-  
-  // If it's a rhombus node, we need special handling
+
+  // special handling for rhombus nodes
   if (nodeToDelete.type === 'rhombus') {
     // Find all nodes connected to this rhombus (branches)
     const branchNodes = outgoingEdges.map(e => e.target);
@@ -206,42 +200,34 @@ const deleteNode = async (nodeId) => {
     for (const branchId of branchNodes) {
       await deleteNode(branchId);
     }
-    
-    // If there's an incoming edge and outgoing edges, create new connections
-    if (incomingEdge && outgoingEdges.length > 0) {
-      const previousNodeId = incomingEdge.source;
-      const newEdges = [];
-      
-      // Find the original target of the rhombus branch (the node after "Yes" or "No")
-      for (const outEdge of outgoingEdges) {
-        const branchNode = nodes.value.find(n => n.id === outEdge.target);
-        if (branchNode) {
-          const branchOutgoingEdges = edges.value.filter(e => e.source === branchNode.id);
-          for (const branchOutEdge of branchOutgoingEdges) {
-            newEdges.push({
-              id: `edge-${previousNodeId}-${branchOutEdge.target}-${Date.now()}`,
-              source: previousNodeId,
-              target: branchOutEdge.target,
-              type: 'smoothstep',
-              label: '+',
-              labelStyle: { fill: 'white', fontSize: '14px', fontWeight: 'bold' },
-              labelBgStyle: { fill: '#ccc', rx: '50%', ry: '50%', width: '25px', height: '25px' }
-            });
-          }
-        }
-      }
-      
-      // Add the new edges
-      if (newEdges.length > 0) {
-        await addEdges(newEdges);
-        await nextTick(); // Wait for Vue to update
-      }
-    }
   }
+
+  // Find the previous node (source of incoming edge)
+  const previousNode = incomingEdge ? nodes.value.find(n => n.id === incomingEdge.source) : null;
+  
+  // Find next nodes (targets of outgoing edges)
+  const nextNodes = outgoingEdges.map(e => nodes.value.find(n => n.id === e.target)).filter(Boolean);
+
+  // Remove the node and its connected edges
   await removeNodes([nodeId]);
   await removeEdges(connectedEdges.map(e => e.id));
+
+  // Reconnect previous node to next nodes if they exist
+  if (previousNode && nextNodes.length > 0) {
+    const newEdges = nextNodes.map(nextNode => ({
+      id: `edge-${previousNode.id}-${nextNode.id}-${Date.now()}`,
+      source: previousNode.id,
+      target: nextNode.id,
+      type: 'smoothstep',
+      label: '+',
+      labelStyle: { fill: 'white', fontSize: '14px', fontWeight: 'bold' },
+      labelBgStyle: { fill: '#ccc', rx: '50%', ry: '50%', width: '25px', height: '25px' }
+    }));
+
+    await addEdges(newEdges);
+  }
   
-  // Wait for Vue to update
+
   await nextTick();
   fitView();
 }
@@ -285,10 +271,7 @@ const addRhombusNewNode = () => {
       id: `edge-${edge.source}-${rhombusId}`,
       source: edge.source,
       target: rhombusId,
-          type: 'smoothstep',
-      label: '+',
-      labelStyle: { fill: 'white', fontSize: '14px', fontWeight: 'bold' },
-      labelBgStyle: { fill: '#ccc', rx: '50%', ry: '50%', width: '25px', height: '25px' }
+      type: 'smoothstep'
     },
     {
       id: `edge-${rhombusId}-${leftRectId}-left`,
@@ -399,7 +382,6 @@ onInit((instance) => {
       class="basic-flow"
       :node-types="nodeTypes"
       @edge-click="handleEdgeClick"
-      @node-drag-stop="onNodeDragStop"
       :nodes-draggable="!readonly"
       :nodes-connectable="!readonly" 
       :edges-updatable="!readonly"
