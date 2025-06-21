@@ -1,0 +1,511 @@
+<script setup>
+import { ref, watch, nextTick, onMounted } from 'vue'
+import { VueFlow, useVueFlow } from '@vue-flow/core'
+import { Background } from '@vue-flow/background'
+import { MarkerType } from '@vue-flow/core'
+import { initialEdges, initialNodes } from './initial-elements.js'
+
+import '@vue-flow/core/dist/style.css'
+import '@vue-flow/core/dist/theme-default.css'
+import RhombusNode from './RhombusNode.vue';
+import RectangleNode from './RectangleNode.vue';
+
+const props = defineProps({
+  initialNodes: {
+    type: Array,
+    default: () => [
+      {
+        id: '1',
+        type: 'input',
+        data: { label: '' },
+        position: { x: 250, y: 0 },
+        class: 'start-node',
+      },
+      {
+        id: '2',
+        type: 'output',
+        data: { label: '' },
+        position: { x: 250, y: 250 },
+        class: 'end-node',
+      }
+    ]
+  },
+  initialEdges: {
+    type: Array,
+    default: () => [
+      {
+        id: 'e1-2',
+        source: '1',
+        target: '2',
+        type: 'smoothstep',
+        label: '+',
+        labelBgStyle: {
+          fill: '#ccc',
+          rx: '50%',
+          ry: '50%',
+          width: '20px',
+          height: '20px',
+          transform: 'translate(-9px,-6px)'
+        },
+        labelStyle: {
+          dominantBaseline: 'middle',
+          textAnchor: 'middle',
+          fill: 'white',
+          fontWeight: 'bold',
+          transform: 'translateY(-5px)'
+        },
+        class: "custom-node"
+      }
+    ]
+  },
+  readonly: {
+    type: Boolean,
+    default: false
+  }
+});
+
+const emit = defineEmits(['update']);
+
+const { onInit, addEdges, addNodes, fitView, removeEdges, removeNodes } = useVueFlow()
+
+const nodes = ref([]);
+const edges = ref([]);
+
+// const nodes = ref([...props.initialNodes]);
+// const edges = ref([...props.initialEdges]);
+const dark = ref(false);
+const activeEdgeId = ref(null);
+const showShapeOptions = ref(false);
+const shapeOptionsPosition = ref({ x: 0, y: 0 });
+const editingNodeId = ref(null);
+const nodeLabel = ref('');
+
+const nodeTypes = {
+  rhombus: RhombusNode,
+  rectangle: RectangleNode
+};
+// Watch for changes in nodes and edges and emit them
+watch([nodes, edges], () => {
+  if (!props.readonly) {
+    emit('update', { nodes: nodes.value, edges: edges.value });
+  }
+}, { deep: true });
+
+// Initialize with props when component mounts
+
+onMounted(() => {
+  nodes.value = [...props.initialNodes];
+  edges.value = [...props.initialEdges];
+  nextTick(() => fitView());
+});
+// Watch for changes in props (in case they update after mount)
+watch(() => props.initialNodes, (newNodes) => {
+  nodes.value = [...newNodes];
+  
+}, { immediate: true });
+// Watch for changes in props (in case they update after mount)
+watch(() => props.initialEdges, (newEdges) => {
+  edges.value = [...newEdges];
+  
+}, { immediate: true });
+
+
+// Handle edge click
+const handleEdgeClick = (event) => {
+  const edge = event.edge;
+  if (!edge) return;
+
+  if (edge.label === '+') {
+    edges.value = edges.value.map(e => 
+      e.id === edge.id ? { 
+        ...e, 
+        label: '×',
+        labelBgStyle: { ...e.labelBgStyle, fill: 'rgb(255, 0, 60)' }
+      } : e
+    );
+    
+    activeEdgeId.value = edge.id;
+    shapeOptionsPosition.value = { x: (event.event.clientX - 190), y: event.event.clientY - 90 };
+    showShapeOptions.value = true;
+  } else if (edge.label === '×') {
+    edges.value = edges.value.map(e => 
+      e.id === edge.id ? { 
+        ...e,   
+        label: '+',
+        labelBgStyle: { ...e.labelBgStyle, fill: '#ccc' }
+      } : e
+    );
+    showShapeOptions.value = false;
+    activeEdgeId.value = null;
+  }
+}
+
+const startEditingNode = (nodeId, currentLabel = '') => {
+  editingNodeId.value = nodeId;
+  nodeLabel.value = currentLabel;
+}
+
+const saveNodeLabel = () => {
+  if (editingNodeId.value) {
+    nodes.value = nodes.value.map(n => 
+      n.id === editingNodeId.value ? { ...n, data: { ...n.data, label: nodeLabel.value } } : n
+    );
+    editingNodeId.value = null;
+    nodeLabel.value = '';
+  }
+}
+const onNodeDragStop = (event) => {
+  // Handle node drag stop if needed
+  console.log('Node drag stopped', event);
+};
+const deleteNode = async (nodeId) => {
+  // Prevent deleting start or end nodes
+  if (nodeId === '1' || nodeId === '2') {
+    console.warn('Cannot delete start or end nodes');
+    return;
+  }
+
+  console.log('Deleting node:', nodeId);
+  
+  // Find the node to be deleted
+  const nodeToDelete = nodes.value.find(n => n.id === nodeId);
+  if (!nodeToDelete) {
+    console.error('Node not found:', nodeId);
+    return;
+  }
+  
+  // Find all edges connected to this node
+  const connectedEdges = edges.value.filter(
+    e => e.source === nodeId || e.target === nodeId
+  );
+  
+  // Find incoming edge (edge where this node is the target)
+  const incomingEdge = edges.value.find(e => e.target === nodeId);
+  // Find outgoing edges (edges where this node is the source)
+  const outgoingEdges = edges.value.filter(e => e.source === nodeId);
+  
+  // If it's a rhombus node, we need special handling
+  if (nodeToDelete.type === 'rhombus') {
+    // Find all nodes connected to this rhombus (branches)
+    const branchNodes = outgoingEdges.map(e => e.target);
+    
+    // Recursively delete all branch nodes
+    for (const branchId of branchNodes) {
+      await deleteNode(branchId);
+    }
+    
+    // If there's an incoming edge and outgoing edges, create new connections
+    if (incomingEdge && outgoingEdges.length > 0) {
+      const previousNodeId = incomingEdge.source;
+      const newEdges = [];
+      
+      // Find the original target of the rhombus branch (the node after "Yes" or "No")
+      for (const outEdge of outgoingEdges) {
+        const branchNode = nodes.value.find(n => n.id === outEdge.target);
+        if (branchNode) {
+          const branchOutgoingEdges = edges.value.filter(e => e.source === branchNode.id);
+          for (const branchOutEdge of branchOutgoingEdges) {
+            newEdges.push({
+              id: `edge-${previousNodeId}-${branchOutEdge.target}-${Date.now()}`,
+              source: previousNodeId,
+              target: branchOutEdge.target,
+              type: 'smoothstep',
+              label: '+',
+              labelStyle: { fill: 'white', fontSize: '14px', fontWeight: 'bold' },
+              labelBgStyle: { fill: '#ccc', rx: '50%', ry: '50%', width: '25px', height: '25px' }
+            });
+          }
+        }
+      }
+      
+      // Add the new edges
+      if (newEdges.length > 0) {
+        await addEdges(newEdges);
+        await nextTick(); // Wait for Vue to update
+      }
+    }
+  }
+  await removeNodes([nodeId]);
+  await removeEdges(connectedEdges.map(e => e.id));
+  
+  // Wait for Vue to update
+  await nextTick();
+  fitView();
+}
+const addRhombusNewNode = () => {
+  if (!activeEdgeId.value) return;
+  const edge = edges.value.find(e => e.id === activeEdgeId.value);
+  if (!edge) return;
+
+  const sourceNode = nodes.value.find(n => n.id === edge.source);
+  const targetNode = nodes.value.find(n => n.id === edge.target);
+  const centerX = (sourceNode.position.x + targetNode.position.x) / 2;
+  const centerY = (sourceNode.position.y + targetNode.position.y) / 2;
+
+  const rhombusId = `rhombus-${Date.now()}`;
+  const leftRectId = `rect-left-${Date.now()}`;
+  const rightRectId = `rect-right-${Date.now()}`;
+
+  const newNodes = [
+    {
+      id: rhombusId,
+      type: 'rhombus',
+      data: { label: 'Condition' },
+      position: { x: centerX, y: centerY },
+    },
+    {
+      id: leftRectId,
+      type: 'rectangle',
+      data: { label: 'Yes' },
+      position: { x: centerX - 150, y: centerY },
+    },
+    {
+      id: rightRectId,
+      type: 'rectangle',
+      data: { label: 'No' },
+      position: { x: centerX + 150, y: centerY },
+    }
+  ];
+
+  const newEdges = [
+    {
+      id: `edge-${edge.source}-${rhombusId}`,
+      source: edge.source,
+      target: rhombusId,
+      type: 'smoothstep'
+    },
+    {
+      id: `edge-${rhombusId}-${leftRectId}-left`,
+      source: rhombusId,
+      target: leftRectId,
+      type: 'smoothstep',
+      label: '+',
+      labelStyle: { fill: 'white', fontSize: '14px', fontWeight: 'bold' },
+      labelBgStyle: { fill: '#ccc', rx: '50%', ry: '50%', width: '25px', height: '25px' }
+    },
+    {
+      id: `edge-${rhombusId}-${rightRectId}-right`,
+      source: rhombusId,
+      target: rightRectId,
+      type: 'smoothstep',
+      label: '+',
+      labelStyle: { fill: 'white', fontSize: '14px', fontWeight: 'bold' },
+      labelBgStyle: { fill: '#ccc', rx: '50%', ry: '50%', width: '25px', height: '25px' }
+    },
+    {
+      id: `edge-${leftRectId}-${edge.target}`,
+      source: leftRectId,
+      target: edge.target,
+      type: 'smoothstep',
+      label: '+',
+      labelStyle: { fill: 'white', fontSize: '14px', fontWeight: 'bold' },
+      labelBgStyle: { fill: '#ccc', rx: '50%', ry: '50%', width: '25px', height: '25px' }
+    },
+    {
+      id: `edge-${rightRectId}-next-${Date.now()}`,
+      source: rightRectId,
+      target: edge.target,
+      type: 'smoothstep',
+      label: '+',
+      labelStyle: { fill: 'white', fontSize: '14px', fontWeight: 'bold' },
+      labelBgStyle: { fill: '#ccc', rx: '50%', ry: '50%', width: '25px', height: '25px' }
+    }
+  ];
+
+  removeEdges([activeEdgeId.value]);
+  addNodes(newNodes);
+  addEdges(newEdges);
+
+  showShapeOptions.value = false;
+  activeEdgeId.value = null;
+  nextTick(() => fitView());
+};
+
+const addRectNewNode = () => {
+  if (!activeEdgeId.value) return;
+  const edge = edges.value.find(e => e.id === activeEdgeId.value);
+  if (!edge) return;
+  
+  const sourceNode = nodes.value.find(n => n.id === edge.source);
+  const targetNode = nodes.value.find(n => n.id === edge.target);
+  const newNodeId = `node-${Date.now()}`;
+  
+  const newNode = {
+    id: newNodeId,
+    type: 'rectangle',
+    data: { label: 'Step' },
+    position: {
+      x: (sourceNode.position.x + targetNode.position.x) / 2,
+      y: (sourceNode.position.y + targetNode.position.y) / 2
+    }
+  }
+
+  removeEdges([activeEdgeId.value]);
+  addNodes([newNode]);
+  
+  const newEdges = [
+    {
+      id: `edge-${edge.source}-${newNodeId}`,
+      source: edge.source,
+      target: newNodeId,
+      type: 'smoothstep',
+      label: '+',
+      labelStyle: { fill: 'white', fontSize: '14px', fontWeight: 'bold' },
+      labelBgStyle: { fill: '#ccc', rx: '50%', ry: '50%', width: '25px', height: '25px' }
+    },
+    {
+      id: `edge-${newNodeId}-${edge.target}`,
+      source: newNodeId,
+      target: edge.target,
+      type: 'smoothstep',
+      label: '+',
+      labelStyle: { fill: 'white', fontSize: '14px', fontWeight: 'bold' },
+      labelBgStyle: { fill: '#ccc', rx: '50%', ry: '50%', width: '25px', height: '25px' }
+    }
+  ];
+  
+  addEdges(newEdges);
+  showShapeOptions.value = false;
+  activeEdgeId.value = null;
+  nextTick(() => fitView());
+}
+onInit((instance) => {
+  instance.fitView();
+});
+</script>
+
+<template>
+  <div>
+    <VueFlow
+      v-model:nodes="nodes"
+      v-model:edges="edges"
+      :class="{ dark }"
+      class="basic-flow"
+      :node-types="nodeTypes"
+      @edge-click="handleEdgeClick"
+      @node-drag-stop="onNodeDragStop"
+      :nodes-draggable="!readonly"
+      :nodes-connectable="!readonly"
+      :edges-updatable="!readonly"
+    >
+      <Background pattern-color="#aaa" :gap="16" />
+      
+      <!-- Node edit modal -->
+      <div v-if="editingNodeId" class="node-edit-modal">
+        <input v-model="nodeLabel" class="node-label-input" />
+        <button @click="saveNodeLabel" class="save-label-btn">Save</button>
+      </div>
+      
+      <!-- Shape selection options -->
+      <div 
+        v-if="showShapeOptions && !readonly"
+        class="shape-options"
+        :style="{
+          transform: `translate(${shapeOptionsPosition.x}px,${shapeOptionsPosition.y}px)`
+        }"
+      > 
+        <button @click="addRectNewNode()" class="shape-option rectangle">
+          ▭
+        </button>
+        <button @click="addRhombusNewNode()" class="shape-option rhombus">
+          ◇
+        </button>
+        <button @click="showShapeOptions = false" class="shape-option close">
+          ×
+        </button>
+      </div>
+
+     <template #node-rectangle="props">
+        <RectangleNode 
+          v-bind="props" 
+          @editNode="startEditingNode" 
+          @deleteNode="(id) => !readonly && deleteNode(id)"
+          @click.stop
+        />
+      </template>
+
+      <template #node-rhombus="props">
+        <RhombusNode 
+          v-bind="props" 
+          @editNode="startEditingNode" 
+          @deleteNode="(id) => !readonly && deleteNode(id)"
+          @click.stop
+        />
+      </template>
+    </VueFlow>
+  </div>
+</template>
+
+<style scoped>
+.basic-flow {
+  height: 100vh;
+  width: 100vw;
+}
+
+.shape-options {
+  position: absolute;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.01);
+  padding: 8px;
+  z-index: 10;
+}
+
+.shape-option {
+  width: 30px;
+  height: 30px;
+  padding: 10px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background: white;
+  font-size: 16px;
+  margin: 5px 0;
+}
+
+.shape-option:hover {
+  background: #f0f0f0;
+}
+
+.shape-option.rectangle {
+  font-size: 14px;
+}
+
+.shape-option.rhombus {
+  font-size: 18px;
+}
+
+.shape-option.close {
+  color: rgb(255, 0, 60);
+}
+
+.node-edit-modal {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: white;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  z-index: 100;
+  display: flex;
+  gap: 5px;
+}
+
+.node-label-input {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+.save-label-btn {
+  padding: 5px 10px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+</style>

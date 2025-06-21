@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 
+
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -10,12 +12,29 @@ const router = createRouter({
       component: HomeView,
     },
     {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
+      path: '/workflows',
+      name: 'workflows.index',
+      component: () => import("../views/Workflows/Index.vue"),
+
+    },
+
+    {
+      path: "/workflows/create",  // Fixed with leading slash
+      name: "workflows.create",
+      component: () => import("../views/Workflows/Create.vue"),
+    },
+    ,
+
+    {
+      path: "/workflows/update/:id",  // Fixed with leading slash
+      name: "workflows.Update",
+      component: () => import("../views/Workflows/Update.vue"),
+    },
+    {
+      path: "/workflows/:id",
+      name: "workflows.show",
+      component: () => import("../views/Workflows/Show.vue"),
+
     },
   ],
 })

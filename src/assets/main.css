@@ -1,35 +1,210 @@
-@import './base.css';
+@import "tailwindcss";
 
+@media screen and (max-width: 1240px) {
+    .container {
+        width: 90% !important;
+        padding: 0;
+    }
+}
+
+@media screen and (width < 640px) {
+    .container {
+        width: 90% !important;
+        margin-right: 0;
+        margin-left: 0;
+    }
+}
+
+.container {
+    width: 90% !important;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+@import 'https://cdn.jsdelivr.net/npm/@vue-flow/core@1.45.0/dist/style.css';
+@import 'https://cdn.jsdelivr.net/npm/@vue-flow/core@1.45.0/dist/theme-default.css';
+@import 'https://cdn.jsdelivr.net/npm/@vue-flow/controls@latest/dist/style.css';
+@import 'https://cdn.jsdelivr.net/npm/@vue-flow/minimap@latest/dist/style.css';
+@import 'https://cdn.jsdelivr.net/npm/@vue-flow/node-resizer@latest/dist/style.css';
+
+html,
+body,
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-weight: normal;
+    margin: 0;
+    height: 100%;
+    font-family: 'JetBrains Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    color: #2c3e50;
 }
 
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
+.vue-flow__minimap {
+    transform: scale(75%);
+    transform-origin: bottom right;
 }
 
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
+.basic-flow.dark {
+    background: #2d3748;
+    color: #fffffb
 }
 
-@media (min-width: 1024px) {
-  body {
+.basic-flow.dark .vue-flow__node {
+    background: #4a5568;
+    color: #fffffb
+}
+
+.basic-flow.dark .vue-flow__node.selected {
+    background: #333;
+    box-shadow: 0 0 0 2px #2563eb
+}
+
+.basic-flow .vue-flow__controls {
     display: flex;
-    place-items: center;
-  }
+    flex-wrap: wrap;
+    justify-content: center
+}
 
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
+.basic-flow.dark .vue-flow__controls {
+    border: 1px solid #FFFFFB
+}
+
+.basic-flow .vue-flow__controls .vue-flow__controls-button {
+    border: none;
+    border-right: 1px solid #eee
+}
+
+.basic-flow .vue-flow__controls .vue-flow__controls-button svg {
+    height: 100%;
+    width: 100%
+}
+
+.basic-flow.dark .vue-flow__controls .vue-flow__controls-button {
+    background: #333;
+    fill: #fffffb;
+    border: none
+}
+
+.basic-flow.dark .vue-flow__controls .vue-flow__controls-button:hover {
+    background: #4d4d4d
+}
+
+.vue-flow__edge-textbg.custom-node {
+    fill: #ccc !important;
+    color: white;
+
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.basic-flow.dark .vue-flow__edge-text {
+    fill: #fffffb
+}
+
+.vue-flow .vue-flow__node.start-node {
+    background-color: green;
+    color: white;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.vue-flow .vue-flow__node.end-node {
+    background-color: red;
+    color: white;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.vue-flow__edge-interaction .vue-flow__edge-textbg {
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    fill: #ccc;
+}
+
+/* Custom node styles */
+.vue-flow__node.rectangle-node {
+    background: white;
+    border: 1px solid #64748b;
+    border-radius: 4px;
+    width: 100px;
+    height: 15px;
+}
+
+.vue-flow__node.rhombus-node {
+    font-weight: 100px;
+    height: 15px;
+}
+
+
+/* Edge label styles */
+.vue-flow__edge-textbg.custom-node {
+    fill: #ccc !important;
+    r: 12px;
+}
+
+.vue-flow__edge-text {
+    dominant-baseline: middle;
+    text-anchor: middle;
+    font-weight: bold;
+    fill: white;
+}
+
+
+
+/* Shape option styles */
+.shape-option.rhombus {
+    font-size: 18px;
+    transform: rotate(45deg) skew(20deg);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+
+/* Rhombus node styles */
+.vue-flow__node.rhombus-node {
+
+    background: white;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vue-flow__node.rhombus-node .vue-flow__label {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.vue-flow__edge-textwrapper .vue-flow__edge-textbg {
+    border-radius: 50%;
+    background-color: #333;
+}
+
+.basic-flow .vue-flow__node.selected-as-source {
+    box-shadow: 0 0 10px 2px rgba(0, 150, 255, 0.8);
 }

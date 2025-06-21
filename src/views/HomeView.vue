@@ -1,9 +1,12 @@
 <script setup>
-import TheWelcome from '../components/TheWelcome.vue'
+import WorkflowListView from './Workflows/Index.vue';
+
+defineOptions({
+    name: "WorkflowShow"
+})
 </script>
 
 <template>
-  <main>
-    <TheWelcome />
-  </main>
+
+<WorkflowListView />
 </template>
