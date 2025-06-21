@@ -171,7 +171,6 @@ body,
 /* Shape option styles */
 .shape-option.rhombus {
     font-size: 18px;
-    transform: rotate(45deg) skew(20deg);
     width: 40px;
     height: 40px;
     display: flex;
