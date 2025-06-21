@@ -12,10 +12,9 @@ onMounted(() => {
   } else {
     // Default workflows if none exist in localStorage
     workflows.value = [
-      { id: 1, name: "purchase order", description: "purchase order" },
-      { id: 2, name: "selling order", description: "selling order" },
-      { id: 3, name: "subscribe order", description: "subscribe order" },
-      { id: 4, name: "checkout order", description: "checkout order" },
+    
+      { id: 1, name: "subscribe order", description: "subscribe order.." },
+      { id: 2, name: "checkout order", description: "checkout order..." },
     ];
     saveWorkflows(); // Save default workflows to localStorage
   }
