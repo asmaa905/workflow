@@ -152,7 +152,6 @@ body,
     height: 15px;
 }
 
-
 /* Edge label styles */
 .vue-flow__edge-textbg.custom-node {
     fill: #ccc !important;
@@ -160,13 +159,18 @@ body,
 }
 
 .vue-flow__edge-text {
-    dominant-baseline: middle;
-    text-anchor: middle;
+    width: 100%;
+    height: 100%;
+    display: flex !important;
+    align-items: flex-end;
+    justify-content: end;
+    border-radius: 50%;
+    background: #ccc;
+    color: white;
     font-weight: bold;
-    fill: white;
+    cursor: pointer;
+
 }
-
-
 
 /* Shape option styles */
 .shape-option.rhombus {
@@ -178,13 +182,9 @@ body,
     justify-content: center;
 }
 
-
-
 /* Rhombus node styles */
 .vue-flow__node.rhombus-node {
-
     background: white;
-
     display: flex;
     align-items: center;
     justify-content: center;
@@ -206,4 +206,10 @@ body,
 
 .basic-flow .vue-flow__node.selected-as-source {
     box-shadow: 0 0 10px 2px rgba(0, 150, 255, 0.8);
+}
+
+.vue-flow__handle {
+
+    background: #ff0072 !important;
+
 }
