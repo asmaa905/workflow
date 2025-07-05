@@ -2,6 +2,7 @@
   import { onMounted, onUnmounted } from 'vue';
   import { Handle, Position } from '@vue-flow/core'
   const props = defineProps(['id', 'data', 'type']);
+  
   const emit = defineEmits(['editNode', 'deleteNode']);
   const handleEditText = (e) => {
     if(e.key == 'enter'){
@@ -28,6 +29,17 @@
   onUnmounted(() => {
     document.removeEventListener("keydown", listen);
   });
+  
+const extractNodeIdPart = (id) => {
+  if (!id) return ''; // Add this null check
+  if (id.includes('-')) {
+    const parts = id.split('-');
+    if (parts.length >= 2) {
+      return parts[1];
+    }
+  }
+  return id;
+};
 </script>
 <template>
   <div class="node-container rectangle-node "  @click="handleEditText">
@@ -36,7 +48,7 @@
    <div class="node-content">
       <div class="node-label">{{ data.label }}</div>
       <div class="rect-setting flex justify-between items-center w-full">
-        <p style="font-size: 6px;">p{{ data.parent }}, ch-{{data.child[0]}}</p>
+        <p style="font-size: 6px;">p-{{extractNodeIdPart(data.actualPrevNode )}}, ch-{{extractNodeIdPart(data.actualNextNode)}}</p>
          <button 
         class="delete-btn w-[25px] h-[25px]" 
         @click.stop="handleDelete"
