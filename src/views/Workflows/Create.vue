@@ -2,6 +2,9 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import WorkflowEditor from '@/components/WorkflowEditor.vue';
+import NewFlowchart from '@/components/newFlowchart.vue';
+import WorkflowEditorAllEdit from '@/components/WorkflowEditorAllEdit.vue';
+import FlowchartEditor from '@/components/FlowchartEditor.vue';
 
 const router = useRouter();
 const workflow = ref({
@@ -72,7 +75,7 @@ function updateDiagramData({ nodes, edges }) {
             <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
               Workflow Diagram
             </label>
-            <WorkflowEditor @update="updateDiagramData" />
+            <FlowchartEditor />
           </div>
           
           <button type="submit" class="inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-white bg-blue-700 rounded-lg focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900 hover:bg-blue-800">

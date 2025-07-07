@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flowchart with Decision Branching</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 50px;
+            background: #f9f9f9;
+        }
+
+        #flowchart {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 600px;
+        }
+
+        .node {
+            padding: 10px 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .start,
+        .end {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+            border-radius: 100%;
+            height: 35px;
+            width: 35px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 15px 0;
+            padding: 0;
+        }
+
+        .end {
+            background-color: #f44336;
+        }
+
+        .decision {
+            width: 20px;
+            height: 20px;
+            background: white;
+            transform: rotate(45deg);
+            border: 2px solid #252424;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            padding: 7px !important;
+        }
+
+        .decision span {
+            transform: rotate(-45deg);
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .add-btn {
+            background: #ccc;
+            color: #444;
+            border-radius: 50%;
+            cursor: pointer;
+            margin: 5px;
+            z-index: 1;
+            font-size: 18px;
+            border: none;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: white;
+            border-radius: 50%;
+            border: 1px solid #ccc;
+            color: red;
+            cursor: pointer;
+            font-size: 10px;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            line-height: 1;
+        }
+
+        svg {
+            pointer-events: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .branch-wrapper {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            margin: 10px 0;
+            position: relative;
+        }
+
+        .branch {
+            background: #444;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            min-width: 100px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .merge {
+            width: 20px;
+            height: 20px;
+            background: #444;
+            transform: rotate(45deg);
+            border-radius: 0px !important;
+            padding: 0 !important;
+        }
+
+        .branch-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px 0;
+            width: 100%;
+        }
+
+        .branch-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .branch-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .step {
+            min-width: 120px;
+        }
+
+        .branch-children {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .branchh {
+            background: transparent;
+            color: #444;
+            padding: 0 !important;
+            border-radius: 6px;
+            min-width: 50px !important;
+            height: 20px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            text-align: left;
+            transform: rotate(90deg) translate(0px, 5px) !important;
+        }
+
+        .selection-form {
+            position: absolute;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="flowchart"></div>
+
+    <script>
+        const flowchart = document.getElementById('flowchart');
+        let nodes = [{ id: '1', type: 'start', label: '' }, { id: 'end', type: 'end', label: '' }];
+
+        function renderFlow() {
+            flowchart.innerHTML = '';
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            flowchart.appendChild(svg);
+
+            nodes.forEach((node, i) => {
+                if (node.type === 'branch-block') {
+                    createAndAppendBranchElement(node, flowchart);
+                } else {
+                    createAndAppendSimpleNode(node, i, flowchart);
+                }
+
+                if (i < nodes.length - 1 && node.type !== 'branch-block') {
+                    const addBtn = document.createElement('button');
+                    addBtn.className = 'add-btn';
+                    addBtn.innerText = '+';
+                    if (node.type === 'decision') {
+                        addBtn.onclick = (e) => {
+                            const branchNode = nodes[i + 1];
+                            if (branchNode && branchNode.type === 'branch-block') {
+                                showBranchSelectionForm(e.target, branchNode);
+                            }
+                        };
+                    } else {
+                        addBtn.onclick = (e) => showSelectionForm(e.target, i);
+                    }
+                    flowchart.appendChild(addBtn);
+                }
+            });
+
+            requestAnimationFrame(() => drawAllLines());
+        }
+
+        function createAndAppendSimpleNode(node, index, parentContainer, parentBranch = null) {
+            const el = document.createElement('div');
+            el.className = `node ${node.type}`;
+            el.dataset.nodeId = node.id;
+
+            if (node.type === 'decision') {
+                el.innerHTML = '<span></span>';
+            } else {
+                el.innerText = node.label || '';
+            }
+
+            if (node.type !== 'start' && node.type !== 'end' && node.type !== 'merge') {
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-btn';
+                delBtn.innerHTML = '&#x1F5D1;';
+                delBtn.onclick = () => {
+                    if (parentBranch) {
+                        const nodeIndex = parentBranch.children.findIndex(n => n.id === node.id);
+                        if (nodeIndex > -1) {
+                            if (node.type === 'decision') parentBranch.children.splice(nodeIndex, 3);
+                            else parentBranch.children.splice(nodeIndex, 1);
+                        }
+                    } else {
+                        const nodeIndex = nodes.findIndex(n => n.id === node.id);
+                        if (nodeIndex > -1) {
+                            if (node.type === 'decision') nodes.splice(nodeIndex, 3);
+                            else nodes.splice(nodeIndex, 1);
+                        }
+                    }
+                    renderFlow();
+                };
+                el.appendChild(delBtn);
+            }
+            parentContainer.appendChild(el);
+        }
+
+        function createAndAppendBranchElement(branchNode, parentContainer) {
+            const branchContainer = document.createElement('div');
+            branchContainer.className = 'branch-container';
+            branchContainer.dataset.nodeId = branchNode.id;
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'branch-wrapper';
+
+            branchNode.branches.forEach(branch => {
+                const branchColumn = document.createElement('div');
+                branchColumn.className = 'branch-column';
+
+                const branchContent = document.createElement('div');
+                branchContent.className = 'branch-content';
+
+                const branchEl = document.createElement('div');
+                branchEl.className = 'branch branchh';
+                branchEl.innerText = branch.label;
+                branchEl.dataset.nodeId = branch.id;
+                branchContent.appendChild(branchEl);
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-btn';
+                delBtn.innerHTML = '&#x1F5D1;';
+                delBtn.onclick = () => {
+                    const branchIndex = branchNode.branches.findIndex(b => b.id === branch.id);
+                    if (branchIndex > -1) {
+                        branchNode.branches.splice(branchIndex, 1);
+                        if (branchNode.branches.length < 2) {
+                            const blockIndex = nodes.findIndex(n => n.id === branchNode.id);
+                            if (blockIndex > 0) nodes.splice(blockIndex - 1, 3);
+                        }
+                        renderFlow();
+                    }
+                };
+                branchEl.appendChild(delBtn);
+
+                const childrenContainer = document.createElement('div');
+                childrenContainer.className = 'branch-children';
+                branchContent.appendChild(childrenContainer);
+
+                const createAddButton = (index, currentBranch) => {
+                    const addBtn = document.createElement('button');
+                    addBtn.className = 'add-btn';
+                    addBtn.innerText = '+';
+                    addBtn.onclick = (e) => {
+                        showSelectionForm(e.target, index, currentBranch);
+                    };
+                    return addBtn;
+                };
+
+                childrenContainer.appendChild(createAddButton(0, branch));
+
+                if (branch.children) {
+                    branch.children.forEach((childNode, childIndex) => {
+                        if (childNode.type === 'branch-block') {
+                            createAndAppendBranchElement(childNode, childrenContainer);
+                        } else {
+                            createAndAppendSimpleNode(childNode, childIndex, childrenContainer, branch);
+                        }
+                        childrenContainer.appendChild(createAddButton(childIndex + 1, branch));
+                    });
+                }
+
+                branchColumn.appendChild(branchContent);
+                wrapper.appendChild(branchColumn);
+            });
+            branchContainer.appendChild(wrapper);
+            parentContainer.appendChild(branchContainer);
+        }
+
+        function showBranchSelectionForm(target, branchNode) {
+            const existingForm = document.querySelector('.selection-form');
+            if (existingForm) existingForm.remove();
+
+            const form = document.createElement('div');
+            form.className = 'selection-form';
+
+            const rect = target.getBoundingClientRect();
+            form.style.left = `${rect.left + rect.width + 5}px`;
+            form.style.top = `${rect.top}px`;
+
+            const addBranchBtn = document.createElement('button');
+            addBranchBtn.innerText = 'Add Branch';
+            addBranchBtn.onclick = () => {
+                const label = prompt("Enter label for new branch:", "Branch");
+                if (label) {
+                    branchNode.branches.push({ id: `branch-${Date.now()}`, label, children: [] });
+                    renderFlow();
+                }
+                form.remove();
+            };
+
+            const exitBtn = document.createElement('button');
+            exitBtn.innerText = 'Cancel';
+            exitBtn.className = 'exit-btn';
+            exitBtn.onclick = () => {
+                form.remove();
+            };
+
+            form.appendChild(addBranchBtn);
+            form.appendChild(exitBtn);
+
+            document.body.appendChild(form);
+
+            const closeForm = (e) => {
+                if (!form.contains(e.target)) {
+                    form.remove();
+                    document.removeEventListener('click', closeForm);
+                }
+            };
+            setTimeout(() => {
+                document.addEventListener('click', closeForm);
+            }, 0);
+        }
+
+        function showSelectionForm(target, index, branch) {
+            const existingForm = document.querySelector('.selection-form');
+            if (existingForm) existingForm.remove();
+
+            const form = document.createElement('div');
+            form.className = 'selection-form';
+
+            const rect = target.getBoundingClientRect();
+            form.style.left = `${rect.left + rect.width + 5}px`;
+            form.style.top = `${rect.top}px`;
+
+            const stepBtn = document.createElement('button');
+            stepBtn.innerText = 'Add Step';
+            stepBtn.onclick = () => {
+                const newNode = { id: `step-${Date.now()}`, type: 'step', label: 'New Step' };
+                if (branch) {
+                    if (!branch.children) branch.children = [];
+                    branch.children.splice(index, 0, newNode);
+                } else {
+                    nodes.splice(index + 1, 0, newNode);
+                }
+                renderFlow();
+                form.remove();
+            };
+
+            const decisionBtn = document.createElement('button');
+            decisionBtn.innerText = 'Add Decision';
+            decisionBtn.className = 'decision-btn';
+            decisionBtn.onclick = () => {
+                const timestamp = Date.now();
+                const decisionId = `decision-${timestamp}`;
+                const mergeId = `merge-${timestamp}`;
+                const branch1Id = `b1-${timestamp}`;
+                const branch2Id = `b2-${timestamp}`;
+                const branchBlockId = `branches-${timestamp}`;
+
+                const newDecisionStructure = [
+                    { id: decisionId, type: 'decision' },
+                    {
+                        id: branchBlockId,
+                        type: 'branch-block',
+                        branches: [
+                            { id: branch1Id, label: 'Yes', children: [] },
+                            { id: branch2Id, label: 'No', children: [] }
+                        ]
+                    },
+                    { id: mergeId, type: 'merge' }
+                ];
+
+                if (branch) {
+                    if (!branch.children) branch.children = [];
+                    branch.children.splice(index, 0, ...newDecisionStructure);
+                } else {
+                    nodes.splice(index + 1, 0, ...newDecisionStructure);
+                }
+
+                renderFlow();
+                form.remove();
+            };
+
+            const exitBtn = document.createElement('button');
+            exitBtn.innerText = 'Cancel';
+            exitBtn.className = 'exit-btn';
+            exitBtn.onclick = () => form.remove();
+
+            form.appendChild(stepBtn);
+            form.appendChild(decisionBtn);
+            form.appendChild(exitBtn);
+            document.body.appendChild(form);
+
+            const closeForm = (e) => {
+                if (!form.contains(e.target)) {
+                    form.remove();
+                    document.removeEventListener('click', closeForm);
+                }
+            };
+            setTimeout(() => document.addEventListener('click', closeForm), 0);
+        }
+
+        function drawAllLines() {
+            const svg = flowchart.querySelector('svg');
+            svg.innerHTML = '';
+            const containerRect = flowchart.getBoundingClientRect();
+
+            const getRect = (el) => {
+                if (!el) return null;
+                const r = el.getBoundingClientRect();
+                return {
+                    left: r.left - containerRect.left,
+                    top: r.top - containerRect.top,
+                    right: r.right - containerRect.left,
+                    bottom: r.bottom - containerRect.top,
+                    width: r.width,
+                    height: r.height,
+                    cx: r.left - containerRect.left + r.width / 2,
+                    cy: r.top - containerRect.top + r.height / 2
+                };
+            };
+
+            const drawPath = (d, color = '#888') => {
+                const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                p.setAttribute("d", d);
+                p.setAttribute("stroke", color);
+                p.setAttribute("stroke-width", "2");
+                p.setAttribute("fill", "none");
+                svg.appendChild(p);
+            };
+
+            // Draw main vertical connectors
+            const allElements = Array.from(flowchart.children);
+            for (let i = 0; i < allElements.length - 1; i++) {
+                const fromEl = allElements[i];
+                const toEl = allElements[i + 1];
+
+                if (fromEl.classList.contains('node') && toEl.classList.contains('add-btn')) {
+                    const fromRect = getRect(fromEl);
+                    const toRect = getRect(toEl);
+                    drawPath(`M ${fromRect.cx} ${fromRect.bottom} V ${toRect.top}`);
+                } else if (fromEl.classList.contains('add-btn') && toEl.classList.contains('node')) {
+                    const fromRect = getRect(fromEl);
+                    const toRect = getRect(toEl);
+                    drawPath(`M ${fromRect.cx} ${fromRect.bottom} V ${toRect.top}`);
+                } else if (fromEl.classList.contains('node') && toEl.classList.contains('node')) {
+                    const fromRect = getRect(fromEl);
+                    const toRect = getRect(toEl);
+                    drawPath(`M ${fromRect.cx} ${fromRect.bottom} V ${toRect.top}`);
+                }
+            }
+
+            // Draw all branch lines recursively
+            function drawBranchLines(container, parentDecisionRect = null) {
+                const branchBlockId = container.dataset.nodeId;
+                const branchBlockNode = findNodeById(branchBlockId);
+                if (!branchBlockNode) return;
+
+                const nodeIndex = findNodeIndexById(branchBlockId);
+                const decisionNode = nodes[nodeIndex - 1];
+                const mergeNode = nodes[nodeIndex + 1];
+
+                if (!decisionNode || !mergeNode) return;
+
+                const decisionEl = flowchart.querySelector(`[data-node-id="${decisionNode.id}"]`);
+                const addBtnUnderDecision = decisionEl.nextElementSibling;
+                const startRect = getRect(addBtnUnderDecision);
+                const horizontalLineY = startRect.bottom + 20;
+
+                let branchXCoords = [];
+                let branchRects = [];
+
+                branchBlockNode.branches.forEach(branch => {
+                    const branchEl = flowchart.querySelector(`[data-node-id="${branch.id}"]`);
+                    const branchRect = getRect(branchEl);
+                    if (!branchRect) return;
+
+                    branchXCoords.push(branchRect.cx);
+                    branchRects.push(branchRect);
+
+                    // Draw vertical line from decision to branch label
+                    drawPath(`M ${branchRect.cx} ${startRect.bottom} V ${branchRect.cy}`);
+
+                    // Draw horizontal line from branch label to main vertical line
+                    if (parentDecisionRect) {
+                        // For nested decisions, connect to parent decision's vertical line
+                        drawPath(`M ${branchRect.cx} ${branchRect.cy} H ${parentDecisionRect.cx}`);
+                    } else {
+                        // For top-level decisions, connect to the main vertical line
+                        drawPath(`M ${branchRect.cx} ${branchRect.cy} H ${branchRect.cx > startRect.cx ?
+                            Math.max(...branchXCoords) : Math.min(...branchXCoords)}`);
+                    }
+                });
+
+                // Draw vertical line from decision to horizontal line
+                drawPath(`M ${startRect.cx} ${startRect.bottom} V ${horizontalLineY}`);
+
+                // Draw main horizontal line connecting all branches
+                if (branchXCoords.length > 1) {
+                    drawPath(`M ${Math.min(...branchXCoords)} ${horizontalLineY} H ${Math.max(...branchXCoords)}`);
+                }
+
+                // Draw lines within each branch column
+                container.querySelectorAll('.branch-column').forEach((column, colIndex) => {
+                    const columnElements = Array.from(column.querySelectorAll('.branch-content > *, .branch-children > *'));
+                    for (let i = 0; i < columnElements.length - 1; i++) {
+                        const fromRect = getRect(columnElements[i]);
+                        const toRect = getRect(columnElements[i + 1]);
+                        if (fromRect && toRect) {
+                            drawPath(`M ${fromRect.cx} ${fromRect.bottom} V ${toRect.top}`);
+                        }
+                    }
+
+                    // Handle nested decisions
+                    const nestedContainers = column.querySelectorAll('.branch-container');
+                    nestedContainers.forEach(nestedContainer => {
+                        const nestedBranchRect = branchRects[colIndex];
+                        drawBranchLines(nestedContainer, nestedBranchRect);
+                    });
+                });
+
+                const mergeEl = flowchart.querySelector(`[data-node-id="${mergeNode.id}"]`);
+                const mergeRect = getRect(mergeEl);
+                if (!mergeRect) return;
+
+                let lastElYCoords = [];
+                let lastElXCoords = [];
+
+                branchBlockNode.branches.forEach(branch => {
+                    const col = flowchart.querySelector(`[data-node-id="${branch.id}"]`)?.closest('.branch-column');
+                    if (!col) return;
+
+                    const elementsInCol = Array.from(col.querySelectorAll('.branch-children > *'));
+                    if (elementsInCol.length === 0) {
+                        const branchLabel = col.querySelector('.branchh');
+                        const branchLabelRect = getRect(branchLabel);
+                        if (branchLabelRect) {
+                            lastElYCoords.push(branchLabelRect.bottom);
+                            lastElXCoords.push(branchLabelRect.cx);
+                        }
+                        return;
+                    }
+
+                    const lastElement = elementsInCol[elementsInCol.length - 1];
+                    const lastRect = getRect(lastElement);
+                    if (!lastRect) return;
+
+                    lastElYCoords.push(lastRect.bottom);
+                    lastElXCoords.push(lastRect.cx);
+                });
+
+                if (lastElYCoords.length === 0) return;
+
+                const mergeHorizontalY = Math.max(...lastElYCoords) + 20;
+
+                // Draw vertical lines from each branch to the merge horizontal line
+                lastElXCoords.forEach((x, idx) => {
+                    drawPath(`M ${x} ${lastElYCoords[idx]} V ${mergeHorizontalY}`);
+                });
+
+                // Draw the merge horizontal line
+                if (lastElXCoords.length > 1) {
+                    drawPath(`M ${Math.min(...lastElXCoords)} ${mergeHorizontalY} H ${Math.max(...lastElXCoords)}`);
+                }
+
+                // Draw vertical line from merge horizontal line to merge node
+                drawPath(`M ${mergeRect.cx} ${mergeHorizontalY} V ${mergeRect.top}`);
+            }
+
+            // Helper functions to find nodes in the nested structure
+            function findNodeById(id) {
+                // Check top-level nodes first
+                const topLevelNode = nodes.find(n => n.id === id);
+                if (topLevelNode) return topLevelNode;
+
+                // Check nested branch nodes
+                for (const node of nodes) {
+                    if (node.type === 'branch-block') {
+                        const found = findNodeInBranches(node.branches, id);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            }
+
+            function findNodeInBranches(branches, id) {
+                for (const branch of branches) {
+                    if (branch.id === id) return branch;
+                    if (branch.children) {
+                        for (const child of branch.children) {
+                            if (child.id === id) return child;
+                            if (child.type === 'branch-block') {
+                                const found = findNodeInBranches(child.branches, id);
+                                if (found) return found;
+                            }
+                        }
+                    }
+                }
+                return null;
+            }
+
+            function findNodeIndexById(id) {
+                for (let i = 0; i < nodes.length; i++) {
+                    if (nodes[i].id === id) return i;
+                }
+                return -1;
+            }
+
+            document.querySelectorAll('.branch-container').forEach(container => {
+                drawBranchLines(container);
+            });
+        }
+
+        renderFlow();
+    </script>
+</body>
+
+</html>
