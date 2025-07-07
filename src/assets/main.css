@@ -116,6 +116,7 @@ body,
     display: flex;
     justify-content: center;
     align-items: center;
+    border: none !important
 }
 
 .vue-flow .vue-flow__node.end-node {
@@ -127,6 +128,7 @@ body,
     display: flex;
     justify-content: center;
     align-items: center;
+    border: none !important
 }
 
 
