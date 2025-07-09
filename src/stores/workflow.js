@@ -75,6 +75,216 @@ export const useWorkflowStore = defineStore('workflow', {
         ],
         nodes: [],
         edges: [],
+        //include nodes that not have parent or parent = null in the first level of flowchart
+        basicNodes: [
+            {
+                id: 'rect-2.1.1.1.2-12131154646',
+                type: 'rectangle',
+                data: {
+                    label: 'Lorem ipsum',
+                    prevNodeId: 'rect-2.1.1.1.1-12131154646',
+                    nextNodeId: 'rect-2.1.1.1.3-12131154646',
+                    parent: 'rhombus-2.1.1-12131554646',
+                    child: [],
+                    endDotId: null,
+                    nextNodeofRhombus: null,
+                    BranchfromRhombus: true,
+                    actualNextNode: 'rect-2.1.1.1.3-12131154646',
+                    actualPrevNode: 'rect-2.1.1.1.1-12131154646',
+                    actualId: '2.1.1.1.2'
+
+                },
+                position: { x: -10, y: 500 },
+                class: ''
+            },
+            {
+                id: 'rhombus-2.1.1-12131554646',
+                type: 'rhombus',
+                data: {
+                    label: 'Lorem ipsum',
+                    prevNodeId: 'rhombus-2-12131154646',
+                    nextNodeId: 'rect-2.1.1.1.1-12131154646',
+                    parent: 'rhombus-2-12131154646',
+                    child: {},
+                    endDotId: 'dot.end-dot.end-r.rhombus-2-12131154646-12131154646',
+                    nextNodeofRhombus: 'rect-2.1.2-12131154646',
+                    BranchfromRhombus: true,
+                    actualNextNode: 'rect-2.1.1.1.1-12131154646',
+                    actualPrevNode: 'rhombus-2-12131154646',
+                    actualId: '2.1.1'
+
+                },
+                position: { x: -10, y: 500 },
+                class: ''
+            },
+        ],
+        allNodes: [
+            {
+                id: 'rect-2.1.1.1.2-12131154646',
+                type: 'rectangle',
+                data: {
+                    label: 'Lorem ipsum',
+                    prevNodeId: 'rect-2.1.1.1.1-12131154646',
+                    nextNodeId: 'rect-2.1.1.1.3-12131154646',
+                    parent: 'rhombus-2.1.1-12131554646',
+                    child: [],
+                    endDotId: null,
+                    nextNodeofRhombus: null,
+                    BranchfromRhombus: true,
+                    actualNextNode: 'rect-2.1.1.1.3-12131154646',
+                    actualPrevNode: 'rect-2.1.1.1.1-12131154646',
+                    actualId: '2.1.1.1.2'
+
+                },
+                position: { x: -10, y: 500 },
+                class: ''
+            },
+            {
+                id: 'rhombus-2.1.1-12131554646',
+                type: 'rectangle',
+                data: {
+                    label: 'Lorem ipsum',
+                    prevNodeId: 'rhombus-2-12131154646',
+                    nextNodeId: 'rect-2.1.1.1.1-12131154646',
+                    parent: 'rhombus-2-12131154646',
+                    child: {
+                        '1': [
+                            {
+                                id: 'rect-2.1.1.1.1-12131154646',
+                                type: 'rectangle',
+                                data: {
+                                    label: 'Lorem ipsum',
+                                    prevNodeId: 'rect-2.1.1.1.1-12131154646',
+                                    nextNodeId: 'rect-2.1.1.1.3-12131154646',
+                                    parent: 'rhombus-2.1.1-12131554646',
+                                    child: [],
+                                    endDotId: null,
+                                    nextNodeofRhombus: null,
+                                    BranchfromRhombus: true,
+                                    actualNextNode: 'rect-2.1.1.1.3-12131154646',
+                                    actualPrevNode: 'rect-2.1.1.1.1-12131154646',
+                                    actualId: '2.1.1.1.2'
+
+                                },
+                                position: { x: -10, y: 500 },
+                                class: ''
+                            },
+                            {
+                                id: 'rect-2.1.1.1.2-12131154646',
+                                type: 'rectangle',
+                                data: {
+                                    label: 'Lorem ipsum',
+                                    prevNodeId: 'rect-2.1.1.1.1-12131154646',
+                                    nextNodeId: 'rect-2.1.1.1.3-12131154646',
+                                    parent: 'rhombus-2.1.1-12131554646',
+                                    child: [],
+                                    endDotId: null,
+                                    nextNodeofRhombus: null,
+                                    BranchfromRhombus: true,
+                                    actualNextNode: 'rect-2.1.1.1.3-12131154646',
+                                    actualPrevNode: 'rect-2.1.1.1.1-12131154646',
+                                    actualId: '2.1.1.1.2'
+
+                                },
+                                position: { x: -10, y: 500 },
+                                class: ''
+                            },
+                            {
+                                id: 'rect-2.1.1.1.3-12131154646',
+                                type: 'rectangle',
+                                data: {
+                                    label: 'Lorem ipsum',
+                                    prevNodeId: 'rect-2.1.1.1.1-12131154646',
+                                    nextNodeId: 'rect-2.1.1.1.3-12131154646',
+                                    parent: 'rhombus-2.1.1-12131554646',
+                                    child: [],
+                                    endDotId: null,
+                                    nextNodeofRhombus: null,
+                                    BranchfromRhombus: true,
+                                    actualNextNode: 'rect-2.1.1.1.3-12131154646',
+                                    actualPrevNode: 'rect-2.1.1.1.1-12131154646',
+                                    actualId: '2.1.1.1.2'
+
+                                },
+                                position: { x: -10, y: 500 },
+                                class: ''
+                            },
+                        ],
+                        '2': [
+                            {
+                                id: 'rect-2.1.1.2.1-12131154646',
+                                type: 'rectangle',
+                                data: {
+                                    label: 'Lorem ipsum',
+                                    prevNodeId: 'rect-2.1.1.1.1-12131154646',
+                                    nextNodeId: 'rect-2.1.1.1.3-12131154646',
+                                    parent: 'rhombus-2.1.1-12131554646',
+                                    child: [],
+                                    endDotId: null,
+                                    nextNodeofRhombus: null,
+                                    BranchfromRhombus: true,
+                                    actualNextNode: 'rect-2.1.1.1.3-12131154646',
+                                    actualPrevNode: 'rect-2.1.1.1.1-12131154646',
+                                    actualId: '2.1.1.1.2'
+
+                                },
+                                position: { x: -10, y: 500 },
+                                class: ''
+                            },
+                            {
+                                id: 'rect-2.1.1.2.2-12131154646',
+                                type: 'rectangle',
+                                data: {
+                                    label: 'Lorem ipsum',
+                                    prevNodeId: 'rect-2.1.1.1.1-12131154646',
+                                    nextNodeId: 'rect-2.1.1.1.3-12131154646',
+                                    parent: 'rhombus-2.1.1-12131554646',
+                                    child: [],
+                                    endDotId: null,
+                                    nextNodeofRhombus: null,
+                                    BranchfromRhombus: true,
+                                    actualNextNode: 'rect-2.1.1.1.3-12131154646',
+                                    actualPrevNode: 'rect-2.1.1.1.1-12131154646',
+                                    actualId: '2.1.1.1.2'
+
+                                },
+                                position: { x: -10, y: 500 },
+                                class: ''
+                            },
+                            {
+                                id: 'rect-2.1.1.2.3-12131154646',
+                                type: 'rectangle',
+                                data: {
+                                    label: 'Lorem ipsum',
+                                    prevNodeId: 'rect-2.1.1.1.1-12131154646',
+                                    nextNodeId: 'rect-2.1.1.1.3-12131154646',
+                                    parent: 'rhombus-2.1.1-12131554646',
+                                    child: [],
+                                    endDotId: null,
+                                    nextNodeofRhombus: null,
+                                    BranchfromRhombus: true,
+                                    actualNextNode: 'rect-2.1.1.1.3-12131154646',
+                                    actualPrevNode: 'rect-2.1.1.1.1-12131154646',
+                                    actualId: '2.1.1.1.2'
+
+                                },
+                                position: { x: -10, y: 500 },
+                                class: ''
+                            },
+                        ]
+                    },
+                    endDotId: 'dot.end-dot.end-r.rhombus-2-12131154646-12131154646',
+                    nextNodeofRhombus: 'rect-2.1.2-12131154646',
+                    BranchfromRhombus: true,
+                    actualNextNode: 'rect-2.1.1.1.1-12131154646',
+                    actualPrevNode: 'rhombus-2-12131154646',
+                    actualId: '2.1.1'
+
+                },
+                position: { x: -10, y: 500 },
+                class: ''
+            }
+        ],
         labelCircleStyle: {
             fill: '#ccc',
             rx: '50%',

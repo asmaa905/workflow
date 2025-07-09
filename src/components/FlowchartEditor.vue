@@ -1,298 +1,547 @@
 <template>
-  <div>
-    <div ref="diagramDiv" style="width:100%; height:600px; border:1px solid #ccc; "></div>
-    <div v-if="showNodeTypeForm" 
-         :style="formStyle"
-         style="position:absolute; background:white; padding:10px; border:1px solid #ccc; border-radius:5px; z-index:100;background-color: green !important;">
-      <button @click="addNode('Rectangle')" style="margin-right:5px;"> ▭</button>
-      <button @click="addNode('Diamond')"> ◇</button>
-    </div>
+  <div class="basic-flow">
+    <div class="controls flex gap-2 ">
+  <button @click="zoomIn">Zoom In +</button>
+  <button @click="zoomOut">Zoom Out -</button>
+  <button @click="fitToWindow">Fit to Window</button>
+      </div>
+    <div  ref="diagramDiv" style="width:100%; height:100%;  overflow:auto;"></div>
+
+    <AddButton
+    @close="handleCloseForm"
+      v-if="showNodeTypeForm"
+      :style="formStyle"
+      @addStep="addNode('Rectangle')"
+      @addDecision="addNode('Diamond')"
+    />
   </div>
 </template>
+
+<style scoped>
+.basic-flow {
+  height: 1000px;
+  width: 1000px;
+  background: #fff;
+  position: relative;
+}
+.controls {
+  padding: 10px;
+  text-align: center;
+}
+.controls button {
+  padding: 8px 15px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 5px;
+  border: 1px solid #42b983;
+  background-color: #42b983;
+  color: white;
+  transition: background-color 0.3s;
+}
+.controls button:hover {
+  background-color: #36a473;
+}
+.node-selection-form {
+  position: absolute;
+  background: white;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  max-width: 200px; /* Prevent too wide */
+}
+.come-from-in-to-out-enter-active,
+.come-from-in-to-out-leave-active {
+  transition: transform 0.3s ease-in-out;
+}
+
+.come-from-in-to-out-enter-from,
+.come-from-in-to-out-leave-to {
+  transform: scale(0);
+}
+.option-node {
+  background-color: white;
+  transition: all 0.3s ease-in-out;
+}
+.option-node:hover {
+  background-color: #1ed760;
+}
+.option-node:hover svg {
+  stroke: white;
+}
+.option-node:hover svg path {
+  stroke: white;
+}
+</style>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import * as go from 'gojs';
-import $ from 'jquery';
-window.$ = window.jQuery = $;
+import AddButton from './workflow/addButton.vue';
+const $ = go.GraphObject.make;
 
 const diagramDiv = ref(null);
 const showNodeTypeForm = ref(false);
 const formStyle = ref({ left: '0px', top: '0px' });
 let currentLink = null;
-let currentMidPoint = null;
 let diagram = null;
-let branchCounter = 0; // Counter for new branches
 
+function zoomIn() {
+  if (!diagram) return;
+  diagram.scale = Math.min(2, diagram.scale * 1.01);
+}
+
+function zoomOut() {
+  if (!diagram) return;
+  diagram.scale = Math.max(0.1, diagram.scale / 1.01);
+}
+
+function fitToWindow() {
+  if (!diagram) return;
+  reorganizeLayout(); // This will auto-fit the diagram
+}
+function handleCloseForm() {
+  showNodeTypeForm.value = false;
+  if (currentLink) {
+    // Show the plus button again
+    diagram.model.setDataProperty(currentLink.data, "hasPlusButton", true);
+    currentLink = null;
+  }
+}
 function addNode(category) {
   if (!currentLink || !diagram) return;
   
   diagram.startTransaction("Add Node");
   
-  // Create new node data with the selected category
-  const newnode = { 
-    text: category === 'Diamond' ? 'Decision' : 'new node', 
-    category: category 
-  };
-  diagram.model.addNodeData(newnode);
+  const fromNodeKey = currentLink.data.from;
+  const toNodeKey = currentLink.data.to;
   
-  // Get the new node key
-  const newkey = diagram.model.getKeyForNodeData(newnode);
-  
-  // Split the link into two links
-  const from = currentLink.data.from;
-  const to = currentLink.data.to;
+  // Remove the link that was clicked
   diagram.model.removeLinkData(currentLink.data);
-  diagram.model.addLinkData({ from: from, to: newkey });
-  
-  // For diamond nodes, create branching paths with labels
+console.log('Number(fromNodeKey)',fromNodeKey)
+console.log('Number(toNodeKey)',toNodeKey)
+
   if (category === 'Diamond') {
-    // Create merge node
-    const mergeNode = { text: 'Merge', category: 'diamond' };
-    diagram.model.addNodeData(mergeNode);
-    const mergeKey = diagram.model.getKeyForNodeData(mergeNode);
+  // 1. Create the Decision node
+  const decisionNode = { 
+    id:`diamond-${Number(fromNodeKey)+1}-${Date.now()}`,
+    actualId:`${Number(fromNodeKey)+1}`,
+      text: ` ${Number(fromNodeKey)+1}`, 
+    category: 'Diamond',
+    loc: getLinkMidpoint(currentLink)
+  };
+  diagram.model.addNodeData(decisionNode);
+  const decisionNodeKey = diagram.model.getKeyForNodeData(decisionNode);
+
+  const decisionX = parseFloat(decisionNode.loc.split(' ')[0]);
+  const decisionY = parseFloat(decisionNode.loc.split(' ')[1]);
+  const branchSpacing = 300; // Horizontal spread
+  const branchVerticalOffset = 100; // Vertical offset
+
+  // 2. Create branch nodes
+  const yesNode = { 
+        id:`yesNode-${Number(fromNodeKey)+1}.1.1-${Date.now()}`,
+    actualId:`${Number(fromNodeKey)+1}.1.1`,
+    text: '', 
+    category: 'BranchNode',
+    loc: `${decisionX - branchSpacing} ${decisionY + branchVerticalOffset}`
+  };
+  diagram.model.addNodeData(yesNode);
+  const yesNodeKey = diagram.model.getKeyForNodeData(yesNode);
+
+  const noNode = { 
+            id:`noNode-${Number(fromNodeKey)+1}.1.1-${Date.now()}`,
+    actualId:`${Number(fromNodeKey)+1}.1.1`,
+    text: '', 
+    category: 'BranchNode',
+    loc: `${decisionX + branchSpacing} ${decisionY + branchVerticalOffset}`
+  };
+  diagram.model.addNodeData(noNode);
+  const noNodeKey = diagram.model.getKeyForNodeData(noNode);
+
+  // 3. Create Merge node further down
+  const mergeNode = { 
+            id:`merge-${Number(fromNodeKey)+1}.merge-${Date.now()}`,
+    actualId:`${Number(fromNodeKey)+1}.merge`,
+    category: 'Merge',
+    loc: `${decisionX} ${decisionY + branchVerticalOffset * 2}` // Double the vertical offset
+  };
+  diagram.model.addNodeData(mergeNode);
+  const mergeNodeKey = diagram.model.getKeyForNodeData(mergeNode);
+
+  // 4. Reconnect the flow
+  diagram.model.addLinkData({ from: fromNodeKey, to: decisionNodeKey });
+  diagram.model.addLinkData({ from: decisionNodeKey, to: yesNodeKey,hasPlusButton: false,  text: 'Yes' });
+  diagram.model.addLinkData({ from: decisionNodeKey, to: noNodeKey,hasPlusButton: false,  text: 'No' });
+  diagram.model.addLinkData({ from: yesNodeKey, to: mergeNodeKey, hasPlusButton: true });
+  diagram.model.addLinkData({ from: noNodeKey, to: mergeNodeKey, hasPlusButton: true});
+  diagram.model.addLinkData({ from: mergeNodeKey, to: toNodeKey, hasPlusButton: true });
+} else {
+    // --- Create a simple rectangular node ---
+    const newNode = { 
+      id:`rect-${Number(fromNodeKey)+1}-${Date.now()}`,
+      actualId:`${Number(fromNodeKey)+1}`,
+      text: `Step ${Number(fromNodeKey)+1}`, 
+      category: 'Rectangle',
+      loc: getLinkMidpoint(currentLink)
+    };
+    diagram.model.addNodeData(newNode);
+    const newNodeKey = diagram.model.getKeyForNodeData(newNode);
     
-    // Create initial two links from decision to merge node with labels
-    diagram.model.addLinkData({ 
-      from: newkey, 
-      to: mergeKey, 
-      text: 'Yes',
-    //   curve: go.Link.Bezier,
-    //   curviness: 50,
-    //   toSpot: go.Spot.Left,
-    //   fromSpot: go.Spot.Right
-    });
-    diagram.model.addLinkData({ 
-      from: newkey, 
-      to: mergeKey, 
-      text: 'No',
-    //   curve: go.Link.Bezier,
-    //   curviness: -50,
-    //   toSpot: go.Spot.Right,
-    //   fromSpot: go.Spot.Left
-    });
-    
-    // Add a plus button to the diamond node for adding new branches
-    diagram.nodeTemplateMap.add("Diamond",
-      $(go.Node, "Auto",
-        $(go.Shape, "Diamond", 
-          { fill: "lightgreen", stroke: "darkgreen", strokeWidth: 2, width: 60, height: 60 }),
-        $(go.TextBlock, { margin: 8, editable: true, textAlign: "center" },
-          new go.Binding("text", "text").makeTwoWay()),
-        $("Panel", "Auto",
-          { alignment: go.Spot.Bottom, alignmentFocus: new go.Spot(0.5, 0, 0, 10) },
-          $(go.Shape, "Circle", 
-            { 
-              fill: "white", 
-              stroke: "#42b983", 
-              strokeWidth: 2,
-              width: 20, 
-              height: 20,
-              cursor: "pointer"
-            }),
-          $(go.TextBlock, "+", 
-            { 
-              stroke: "#42b983", 
-              font: "bold 12px sans-serif",
-              cursor: "pointer"
-            }),
-          {
-            click: function(e, node) {
-              e.handled = true;
-              addNewBranch(node);
-            }
-          }
-        )
-      )
-    );
-    
-    diagram.model.addLinkData({ from: mergeKey, to: to });
-    
-    // Position the nodes
-    const diamondNode = diagram.findNodeForData(newnode);
-    if (diamondNode) {
-      diamondNode.location = currentMidPoint;
-      
-      const mergeNodeObj = diagram.findNodeForData(mergeNode);
-      if (mergeNodeObj) {
-        mergeNodeObj.location = new go.Point(currentMidPoint.x, currentMidPoint.y + 150);
-      }
-    }
-  } else {
-    // Regular node connection
-    diagram.model.addLinkData({ from: newkey, to: to });
-    
-    // Position the new node
-    const newnodeobj = diagram.findNodeForData(newnode);
-    if (newnodeobj) newnodeobj.location = currentMidPoint;
+    diagram.model.addLinkData({ from: fromNodeKey, to: newNodeKey });
+    diagram.model.addLinkData({ from: newNodeKey, to: toNodeKey, hasPlusButton: true });
   }
   
   diagram.commitTransaction("Add Node");
+    diagram.startTransaction("Reorganize Layout");
+  
+
+  
   showNodeTypeForm.value = false;
-  currentLink = null;
-  currentMidPoint = null;
+  currentLink = null;reorganizeLayout(); // Add this line to trigger automatic layout
+  diagram.layoutDiagram(true);
+
+}
+// Helper function to calculate midpoint of a link
+function getLinkMidpoint(link) {
+  if (!link || !link.data) return "0 0";
+  const fromNode = diagram.findNodeForKey(link.data.from);
+  const toNode = diagram.findNodeForKey(link.data.to);
+  if (!fromNode || !toNode) return "0 0";
+  
+  const fromPt = fromNode.location;
+  const toPt = toNode.location;
+  
+  return `${(fromPt.x + toPt.x) / 2} ${(fromPt.y + toPt.y) / 2}`;
 }
 
-function addNewBranch(decisionNode) {
-  if (!decisionNode || !diagram) return;
-  
-  diagram.startTransaction("Add Branch");
-  
-  const decisionKey = decisionNode.data.key;
-  const mergeNode = findMergeNode(decisionNode);
-  
-  if (!mergeNode) return;
-  
-  branchCounter++;
-  const branchLabel = `Branch ${branchCounter}`;
-  
-  // Create new link from decision to merge with label
-  diagram.model.addLinkData({
-    from: decisionKey,
-    to: mergeNode.data.key,
-    text: branchLabel,
-    curve: go.Link.Bezier,
-    curviness: branchCounter % 2 === 0 ? 75 : -75, // Alternate curvature
-    toSpot: go.Spot.Top,
-    fromSpot: go.Spot.Bottom
-  });
-  
-  diagram.commitTransaction("Add Branch");
-}
+function deleteNodeAndReconnect(node) {
+    if (!node || !diagram) return;
+    const nodeData = node.data;
 
-function findMergeNode(decisionNode) {
-  if (!decisionNode || !diagram) return null;
-  
-  // Find all links coming out of the decision node
-  const outgoingLinks = diagram.findLinksOutOf(decisionNode.data.key);
-  if (outgoingLinks.count === 0) return null;
-  
-  // Get the first link's to node (all should go to same merge node)
-  const firstLink = outgoingLinks.first();
-  return firstLink ? firstLink.toNode : null;
-}
+    // Forbid deleting Start and End nodes
+    if (nodeData.category === "Start" || nodeData.category === "End") {
+        console.warn("Deletion of Start/End nodes is not allowed.");
+        return;
+    }
 
-onMounted(() => {
-  const $ = go.GraphObject.make;
+    diagram.startTransaction("delete and reconnect");
 
-  diagram = $(go.Diagram, diagramDiv.value, {
-    'undoManager.isEnabled': true,
-    layout: $(go.LayeredDigraphLayout, {
-      direction: 90,
-      layerSpacing: 100,
-      columnSpacing: 100
-    }),
-    "commandHandler.archetypeGroupData": { key: "Group", isGroup: true }
-  });
+    // 1. Find the node that links *into* the node being deleted.
+    const inLink = node.findLinksInto().first();
+    const fromNodeKey = inLink ? inLink.fromNode.key : null;
 
-  // Define node templates
-  diagram.nodeTemplateMap.add("Start",
-    $(go.Node, "Auto",
-      $(go.Shape, "Ellipse", 
-        { fill: "red", stroke: "darkred", strokeWidth: 2, width: 40, height: 40 }),
-      $(go.TextBlock, "Start", 
-        { margin: 5, stroke: "white", font: "bold 12px sans-serif" })
-    ));
+    let toNodeKey = null;
 
-  diagram.nodeTemplateMap.add("End",
-    $(go.Node, "Auto",
-      $(go.Shape, "Ellipse", 
-        { fill: "green", stroke: "darkgreen", strokeWidth: 2, width: 40, height: 40 }),
-      $(go.TextBlock, "End", 
-        { margin: 5, stroke: "white", font: "bold 12px sans-serif" })
-    ));
+    if (nodeData.category === "Diamond") {
+        const partsToDelete = new go.Set();
+        partsToDelete.add(node); 
 
-  // Default node template (Rectangle)
-  diagram.nodeTemplateMap.add("Rectangle",
-    $(go.Node, "Auto",
-      $(go.Shape, "RoundedRectangle", 
-        { fill: "lightblue", stroke: "dodgerblue", strokeWidth: 2 }),
-      $(go.TextBlock, { margin: 8, editable: true },
-        new go.Binding("text", "text").makeTwoWay())
-    ));
+        let mergeNode = null;
+        const queue = new go.List(); 
+        queue.addAll(node.findNodesOutOf());
+        while (queue.count > 0) {
+            const current = queue.first();
+            queue.removeAt(0);
 
-  // Diamond node template (Decision node) - will be overridden in addNode with plus button
-  diagram.nodeTemplateMap.add("Diamond",
-    $(go.Node, "Auto",
-      $(go.Shape, "Diamond", 
-        { fill: "lightgreen", stroke: "darkgreen", strokeWidth: 2, width: 60, height: 60 }),
-      $(go.TextBlock, { margin: 8, editable: true, textAlign: "center" },
-        new go.Binding("text", "text").makeTwoWay())
-    ));
+            if (partsToDelete.contains(current)) continue; // Avoid cycles if the graph is malformed.
 
-  // Enhanced link template with better label positioning
-  diagram.linkTemplate =
-    $(go.Link,
-      {
-        curve: go.Link.Bezier,
-        adjusting: go.Link.Stretch,
-        reshapable: true
-      },
-      $(go.Shape, { strokeWidth: 2 }),
-      $(go.Shape, { toArrow: "Standard", strokeWidth: 2 }),
-      $(go.TextBlock,  // Branch label
-        { 
-          segmentIndex: 0,
-          segmentOffset: new go.Point(0, -20),
-          alignmentFocus: go.Spot.Center,
-          stroke: "black",
-          font: "bold 12px sans-serif",
-          background: "rgba(255,255,255,0.7)",
-          margin: 2,
-          editable: true  // Allow editing the label text
-        },
-        new go.Binding("text", "text").makeTwoWay()
-      ),
-      $("Panel", "Auto",  // the plus button
-        { 
-          _side: go.Link.OrientUp,
-          segmentIndex: 0,
-          segmentFraction: 0.5,
-          alignmentFocus: new go.Spot(0, 0, 0, 20)
-        },
-        $(go.Shape, "Circle", 
-          { 
-            fill: "white", 
-            stroke: "#42b983", 
-            strokeWidth: 2,
-            width: 20, 
-            height: 20,
-            cursor: "pointer"
-          }),
-        $(go.TextBlock, "+", 
-          { 
-            stroke: "#42b983", 
-            font: "bold 12px sans-serif",
-            cursor: "pointer"
-          }),
-        {
-          click: function(e, obj) {
-            e.handled = true;
-            currentLink = obj.part;
-            currentMidPoint = currentLink.midPoint;
+            // If we've found the merge node, mark it and stop traversing this path.
+            if (current.data.category === "Merge") {
+                mergeNode = current;
+                continue;
+            }
             
-            // Show the form near the click position
-            showNodeTypeForm.value = true;
-            formStyle.value = {
-              left: (e.viewPoint.x + 20) + 'px',
-              top: (e.viewPoint.y + 20) + 'px'
-            };
-          }
+            // Otherwise, mark this node for deletion and add its children to the search queue.
+            partsToDelete.add(current);
+            queue.addAll(current.findNodesOutOf());
         }
-      )
-    );
 
-  // Initialize model
+        // After the search, if we found a merge node, find what it connects to.
+        if (mergeNode) {
+            partsToDelete.add(mergeNode); // Mark the merge node for deletion.
+            const mergeOutLink = mergeNode.findLinksOutOf().first();
+            if (mergeOutLink) {
+                toNodeKey = mergeOutLink.toNode.key; // This is our final destination.
+            }
+        }
+        
+        // Remove the diamond, all branch nodes, the merge node, and their connecting links all at once.
+        diagram.removeParts(partsToDelete, true);
+
+    } else {
+        // --- Handle Simple Node Deletion ---
+        // Find the single node that comes *after* the node being deleted.
+        const outLink = node.findLinksOutOf().first();
+        toNodeKey = outLink ? outLink.toNode.key : null;
+        
+        // Remove just the one node.
+        diagram.remove(node);
+    }
+
+    // 4. Create a new link to bridge the gap between the preceding and succeeding nodes.
+    if (fromNodeKey && toNodeKey) {
+        diagram.model.addLinkData({ from: fromNodeKey, to: toNodeKey, hasPlusButton: true });
+    }
+
+    diagram.commitTransaction("delete and reconnect");
+}
+
+const makeDeleteButton = () => {
+  return $(go.Shape,
+      { alignment: new go.Spot(1, 0, -5, 5), // Position at top-right with small offset
+      click: (e, obj) => {
+        deleteNodeAndReconnect(obj.part);
+      },
+      cursor: "pointer", // Add pointer cursor
+        // No need for the "SVG" argument here
+        width: 10,
+        height: 10,
+        fill: "red", 
+        stroke:"red",// It's better to set fill here
+        geometryString: "M15,4c-0.52344,0 -1.05859,0.18359 -1.4375,0.5625c-0.37891,0.37891 -0.5625,0.91406 -0.5625,1.4375v1h-6v2h1v16c0,1.64453 1.35547,3 3,3h12c1.64453,0 3,-1.35547 3,-3v-16h1v-2h-6v-1c0,-0.52344 -0.18359,-1.05859 -0.5625,-1.4375c-0.37891,-0.37891 -0.91406,-0.5625 -1.4375,-0.5625zM15,6h4v1h-4zM10,9h14v16c0,0.55469 -0.44531,1 -1,1h-12c-0.55469,0 -1,-0.44531 -1,-1zM12,12v11h2v-11zM16,12v11h2v-11zM20,12v11h2v-11z"
+      }
+    )
+  
+};
+
+// Then update the reorganizeLayout function to this:
+function reorganizeLayout() {
+  if (!diagram) return;
+  
+  // Store current zoom level
+  const currentScale = diagram.scale;
+  
+  diagram.startTransaction("Reorganize Layout");
+  
+  diagram.layout = $(go.LayeredDigraphLayout, {
+    direction: 90,  // 90 means vertical flow //it have (0 left to right, 90 top to bottom, 180 bottom to top, 270 right to left) 
+    layerSpacing: 150,  //spaces between layers
+      columnSpacing: 200,//spaces between nodes not determins spaces between lines
+    setsPortSpots: true
+  });
+  
+  diagram.layoutDiagram(true);
+  
+  if (diagram.documentBounds.isReal() && diagramDiv.value) {
+    const newScale = Math.min(
+      diagramDiv.value.clientWidth / diagram.documentBounds.width,
+      diagramDiv.value.clientHeight / diagram.documentBounds.height
+    ) * 0.9;
+    
+    if (!isNaN(newScale)) {
+      diagram.scale = Math.min(currentScale, Math.max(0.1, Math.min(2, newScale)));
+    }
+  }
+  
+  diagram.commitTransaction("Reorganize Layout");
+}
+onMounted(() => {
+ const $ = go.GraphObject.make;
+
+diagram = $(go.Diagram, diagramDiv.value, {
+  'undoManager.isEnabled': true,  // Enables undo/redo functionality
+  'toolManager.mouseWheelBehavior': go.ToolManager.WheelZoom, // Enable mouse wheel zoom
+  initialAutoScale: go.Diagram.Uniform, // Initial scaling
+  layout: $(go.LayeredDigraphLayout, {
+    direction: 90,
+    layerSpacing: 100,
+    columnSpacing: 10,
+    setsPortSpots: true
+  }),
+  grid: $(go.Panel, "Grid",
+    { 
+      gridCellSize: new go.Size(20, 20),
+      visible: true  // Ensure grid is visible
+    },
+    // Horizontal lines (solid)
+    $(go.Shape, "LineH", { 
+      stroke: "lightgray",  // Line color
+      strokeWidth: 0.5      // Line thickness
+    }),
+    // Vertical lines (solid)
+    $(go.Shape, "LineV", { 
+      stroke: "lightgray",  // Line color
+      strokeWidth: 0.5      // Line thickness
+    })
+  )
+});
+
+  // Add mouse wheel event listener for smoother zooming
+  diagram.div.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const oldScale = diagram.scale;
+    const newScale = e.deltaY < 0 ? 
+      oldScale * 1.1 :  // Zoom in
+      oldScale / 1.1;   // Zoom out
+    
+    // Limit zoom range
+    diagram.scale = Math.max(0.1, Math.min(2, newScale));
+  }, { passive: false });
+
+
+  // Template for rectangular steps, with a delete button.
+diagram.nodeTemplateMap.add("Rectangle",
+  $(go.Node, "Auto",
+    {
+      locationSpot: go.Spot.Center,
+      margin: new go.Margin(0, 0, 10, 10)
+    },
+    new go.Binding("location", "loc", go.Point.parse).makeTwoWay(go.Point.stringify),
+
+    // THE FIX: Use "RoundedRectangle" as the figure name
+    $(go.Shape, "RoundedRectangle",
+      {
+        // REMOVE the "corner" property, as it's not supported in your version
+        fill: "#FFFFFF",
+        stroke: "#E0E0E0",
+        strokeWidth: 1,
+        minSize: new go.Size(120, 50)
+      }),
+
+    $(go.TextBlock,
+      {
+        margin: 10,
+        editable: true,
+        font: "14px sans-serif"
+      },
+      new go.Binding("text").makeTwoWay()),
+
+    makeDeleteButton()
+  ));
+diagram.nodeTemplateMap.add("Diamond",
+  $(go.Node, "Auto",
+    { locationSpot: go.Spot.Center },
+    new go.Binding("location", "loc", go.Point.parse).makeTwoWay(go.Point.stringify),
+    $(go.Shape, "RoundedRectangle",
+      { 
+        fill: "#FFFFFF",
+        stroke: "#444",
+        strokeWidth: 2,
+        width: 70,  // Adjust as needed
+        height: 70, // Should be same as width for perfect diamond
+        angle: 45,  // Rotates the rectangle to make a diamond
+        // corner: 5   // Now corner works because it's a RoundedRectangle
+      }
+    ),
+    $(go.TextBlock, 
+      { margin: 10, editable: true, font: "14px sans-serif" },
+      new go.Binding("text").makeTwoWay()
+    ),
+    makeDeleteButton()
+  )
+);
+//node in the end of line
+const circleTemplate = (text, color) => {
+  return $(go.Node, "Auto",
+    { locationSpot: go.Spot.Center },
+    $(go.Shape, "Circle", 
+      { fill: color, stroke: "transparent", strokeWidth: 2, width: 35, height: 35 }),
+  );
+};
+  diagram.nodeTemplateMap.add("Start", circleTemplate("", "#4CAF50"));
+  diagram.nodeTemplateMap.add("End", circleTemplate("", "#f44336"));
+  
+  diagram.nodeTemplateMap.add("Merge",
+    $(go.Node, "Spot",
+      { locationSpot: go.Spot.Center, selectable: false },
+      new go.Binding("location", "loc", go.Point.parse).makeTwoWay(go.Point.stringify),
+      $(go.Shape, "Diamond", 
+      
+        { fill: "#5c5b5b", stroke: "#5c5b5b", width: 25, height: 25 })
+    ));
+  //style link template
+  diagram.linkTemplate = $(go.Link,
+    {
+      routing: go.Link.AvoidsNodes,
+      curve: go.Link.JumpOver,
+      corner: 10,
+      reshapable: true,
+      resegmentable: true,
+      relinkableFrom: true,
+      relinkableTo: true
+    },
+    $(go.Shape, { strokeWidth: 2, stroke: "#ccc" }),
+    $(go.Shape, { toArrow: "Circle", stroke: "transparent", fill: "transparent", scale: 1 }),
+    $(go.TextBlock, { 
+        textAlign: "center",
+        font: "12px sans-serif",
+        stroke: "#444",
+        background: "rgba(255,255,255,0.8)",
+        editable: true
+      }, 
+      new go.Binding("text").makeTwoWay()),
+    $("Panel", "Auto",
+      new go.Binding("visible", "hasPlusButton"),
+      {
+        cursor: "pointer",
+        segmentIndex: NaN,
+        segmentFraction: 0.5,
+      },
+      $(go.Shape, "Circle", { fill: "#ccc", stroke: "#ccc", strokeWidth: 2, width: 24, height: 24 }),
+      $(go.TextBlock, "+", { stroke: "#444", font: "bold 16px sans-serif" }),
+      
+
+{
+  click: (e, obj) => {
+    e.handled = true;
+    currentLink = obj.part;
+    
+    // Hide the plus button by updating the link data
+    diagram.model.setDataProperty(currentLink.data, "hasPlusButton", false);
+    
+    const clickPointInDoc = e.documentPoint;
+    const viewPoint = diagram.transformDocToView(clickPointInDoc);
+    showNodeTypeForm.value = true;
+
+    formStyle.value = {
+      position: 'absolute',
+      left: viewPoint.x + 'px',
+      top: viewPoint.y+55 + 'px',
+      transform: 'translate(-50%, -50%)',
+      zIndex: 100
+    };
+  }
+}
+    )
+  );
+
   diagram.model = new go.GraphLinksModel(
     [
-      { key: 0, category: "Start" },
-      { key: 1, text: "Step 1", category: "Rectangle" },
-      { key: 2, category: "End" },
+        // Start node at 100, 100
+      { key: 1, category: "Start", id: "Start", actualId: "1", loc: "100 0" },
+      // End node at 100, 350
+      { key: 2, category: "End", id: "End", actualId: "2", loc: "100 800" },
     ],
     [
-      { from: 0, to: 1 },
-      { from: 1, to: 2 }
+      { from: 1, to: 2, hasPlusButton: true },
     ]
   );
+  // Add this to your node template definitions (in the onMounted() section)
+  diagram.nodeTemplateMap.add("BranchNode",
+    $(go.Node, "Auto",
+      { locationSpot: go.Spot.Center },
+      new go.Binding("location", "loc", go.Point.parse).makeTwoWay(go.Point.stringify),
+      $(go.Shape, "Rectangle",  // Changed to Rectangle for better visibility
+        { 
+          fill: "transparent",
+          stroke: "transparent",
+          width: 1,
+          height: 1
+        }),
+      $(go.TextBlock,
+        { 
+          margin: 8,
+          editable: true,
+          font: "12px sans-serif"
+        },
+        new go.Binding("text").makeTwoWay()),
+    ));
+
+  // After model initialization
+    diagram.startTransaction("Initial Layout");
+    diagram.layoutDiagram(true);
+    diagram.commitTransaction("Initial Layout");
 });
 </script>

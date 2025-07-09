@@ -32,7 +32,7 @@ const props = defineProps({
       type: 'input',
       data: {
           label: '',//1
-          child: [],//2
+          child: null,//2
           parent: null,//3
           nextNodeId: 'end',//4
           prevNodeId: null,//5
@@ -42,7 +42,9 @@ const props = defineProps({
           actualNextNode: 'end',//9
           actualPrevNode: null,//10
           actualId: '1'//11
-      },
+      },  draggable: false,
+      deletable:false,
+      connectable: true,
       position: { x: 100, y: 100 },
       class: 'start-node',
     },
@@ -51,7 +53,7 @@ const props = defineProps({
         type: 'output',
         data: {
             label: '',
-            child: [],
+            child:null,
             parent: null,
             nextNodeId: null,
             prevNodeId: '1',
@@ -63,7 +65,9 @@ const props = defineProps({
             actualId: '1'//11
         },
         position: { x: 100, y: 300 },
-
+        draggable: false,
+        deletable:false,
+        connectable: true,
         class: 'end-node',
     }
     ]
@@ -261,6 +265,97 @@ const adjustPostionsAndIds = (newNode) => {
 };
 
 
+const adjustPostions = (newNode) => {
+  console.log('newNode',newNode)
+  if (newNode.data.parent == null&& !newNode.data.actualId.includes('.')) {
+      console.log('krkr',newNode.data.actualId.includes('.'))
+
+      workflowStore.nodes = workflowStore.nodes.map((node) => {
+        // Skip the new node itself and the root node ('1')
+        if ( node.id === '1') return node;
+        if(node.id!=='end'&& node.type!== 'endDot'){
+            //increase position.x and position.y  
+            //increase id of node
+                  console.log('bode',node)
+                  console.log('parseInt(node.data.actualId.split(".")[0])',parseInt(node.data.actualId.split('.')[0]))
+                  console.log('parseInt(newNode.data.actualId)',parseInt(newNode.data.actualId))
+
+            if(node.data.actualId.includes('.')&&parseInt(node.data.actualId.split('.')[0]) >= parseInt(newNode.data.actualId)){
+              node.position.x += (newNode.type === 'rectangle' ? 0 : 3);
+              node.position.y += (newNode.type === 'rectangle' ? 60 : 300); 
+                      return node;
+
+            }else if(!node.data.actualId.includes('.')&& parseInt(node.data.actualId) >= parseInt(newNode.data.actualId)){
+               node.position.x += (newNode.type === 'rectangle' ? 0 : 3);
+              node.position.y += (newNode.type === 'rectangle' ? 60 : 300); 
+                      return node;
+            }
+
+          
+        }else if(node.type=='endDot'){
+           let rhombusIdFirstParent = workflowStore.nodes.find((n)=>n.id ==node.data.parent).data.actualId.split('.')[0];
+          console.log("rhombusIdFirstParent",rhombusIdFirstParent)
+           if(parseInt(rhombusIdFirstParent) >= parseInt(newNode.data.actualId.split('.')[0])){
+             //increase position.x and position.y  
+                         
+            node.position.x += (newNode.type === 'rectangle' ? 0 : 3);
+            node.position.y += (newNode.type === 'rectangle' ? 60 : 300);
+                    return node;
+
+          }
+        } else if(node.id == 'end'){
+          //increase position.x and position.y
+                      
+            node.position.x += (newNode.type === 'rectangle' ? -3 : 3);
+            node.position.y += (newNode.type === 'rectangle' ? 60 : 300);
+             return node;
+        }
+        return node;
+      })
+
+     //when check for this condition it by sure include . becuase its
+  } else if(newNode.data.actualId.split('.')) {
+        workflowStore.nodes = workflowStore.nodes.map((node) => {
+      // Skip the new node itself and the root node ('1')
+      if ( node.id === '1') return node;
+      if(node.id!=='end'&& node.type!== 'endDot'){
+        if(parseInt(newNode.data.actualId.split('.')[0])>= parseInt(newNode.data.actualId.split('.')[0])){
+          //increate position and ids
+          //increase positions
+          let newNodeparts = newNode.data.actualId.split('.');
+          let actualLastid = newNodeparts[newNodeparts.length-1];
+          let nodeBranchId = newNodeparts[newNodeparts.length-2];
+          let getactNewNodeBranchId = newNode.data.actualId.slice(0,-2);
+          let getactNodeBranchId = node.data.actualId.slice(0,-2);
+          if (getactNewNodeBranchId == getactNodeBranchId && 
+            parseInt(newNode.data.actualId.split('.')[newNode.data.actualId.split('.').length-1]) >= parseInt(newNode.data.actualId.split('.')[newNode.data.actualId.split('.').length-1])){
+              node.position.x += (newNode.type === 'rectangle' ? 0 : 3);
+              node.position.y += (newNode.type === 'rectangle' ? 60 : 300);
+              return node;
+          }
+        }
+      }else if(node.type=='endDot'){
+          let rhombusIdFirstParent = workflowStore.nodes.find((n)=>n.id ==node.data.parent).data.actualId.split('.')[0];
+        if(parseInt(rhombusIdFirstParent) >= parseInt(newNode.data.actualId.split('.')[0])){
+            //increase position.x and position.y  
+                        
+          node.position.x += (newNode.type === 'rectangle' ? 0 : 3);
+          node.position.y += (newNode.type === 'rectangle' ? 60 : 300);
+        }  return node;
+      } else if(node.id == 'end'){
+        //increase position.x and position.y
+                    
+          node.position.x += (newNode.type === 'rectangle' ? 0 : 3);
+          node.position.y += (newNode.type === 'rectangle' ? 60 : 300);  return node;
+                return node;
+
+      }
+      return node;
+    });
+  }
+  console.log(" workflowStore.nodes", workflowStore.nodes)
+};
+
 //when draw edge from two nodes it draw it or make it visible
 const onConnectHandler = (params) => {
    /**
@@ -377,7 +472,7 @@ const addNewNodeFromRhombus=(type='rectangle')=>{
   let newNodeId;
   let prevId;
   let extractNestedId = extractNodeIdPart(activeRhombusId.value); // e.g., "2.1.1"
-    let newRhombusId;
+    let newRhombusId,actualId;
 
   if(type=='rectangle'){
  if (extractNestedId.includes('.')) {
@@ -391,12 +486,16 @@ const addNewNodeFromRhombus=(type='rectangle')=>{
           let finalNodeId = prefixParts.join('.') + '.' + actualNodeId+'.'+outgoingEdges.length +1+'.'+'1'; // "2.1.2 .3.1"
           newRhombusId = finalNodeId;
           newNodeId = `rect-${finalNodeId}-${Date.now()}`;
+          actualId=finalNodeId;
       }
   } else {
       prevId = extractNestedId;
       newRhombusId = Number(extractNestedId) + 1;
       let newBranchNum = outgoingEdges.length +1
       newNodeId = `rect-${Number(extractNestedId) +'.'+newBranchNum+'.'+'1'}-${Date.now()}`;
+      actualId=Number(extractNestedId) +'.'+newBranchNum+'.'+'1';
+
+      
   } 
   const rectId = newNodeId;
 
@@ -408,12 +507,13 @@ const addNewNodeFromRhombus=(type='rectangle')=>{
       prevNodeId: rhombusNode.id,
       nextNodeId: rhombusNode.data.endDotId,
       parent: rhombusNode.id,
-      child:[],
+      child:null,
       endDotId:null,
       nextNodeofRhombus:targetNodeId,
       BranchfromRhombus:true,
       actualNextNode: targetNodeId,
-      actualPrevNode: rhombusNode.id
+      actualPrevNode: rhombusNode.id,//10
+      actualId: actualId//11
       //next =>child,
       //prev:parent
   },
@@ -463,12 +563,15 @@ const addNewNodeFromRhombus=(type='rectangle')=>{
         fontSize:'18px'
       },
     }];
+              // adjustPostions(newNode)
 
   addNodes([newNode]);
   addEdges(newEdges);
   workflowStore.addNodes([newNode]);
   workflowStore.addEdges(newEdges);
   }else if(type='rhombus'){
+      let ActualRhombusId ;
+
   if (extractNestedId.includes('.')) {
       const parts = extractNestedId.split('.'); // e.g., ["2", "1", "1"]
       if (parts.length) {
@@ -479,16 +582,24 @@ const addNewNodeFromRhombus=(type='rectangle')=>{
           let finalNodeId = prefixParts.join('.') + '.' + actualNodeId+'.'+outgoingEdges.length +1+'.'+'1'; // "2.1.2 .3.1"
           newRhombusId = finalNodeId;
           newNodeId = `rhombus-${finalNodeId}-t.${endNode}-${Date.now()}`;
+          ActualRhombusId = finalNodeId
       }
   } else {
       prevId = extractNestedId;
       newRhombusId = Number(extractNestedId) + 1;
       newNodeId = `rhombus-${Number(extractNestedId) + 1 +'.'+outgoingEdges.length +1+'.'+'1'}-t.${targetNodeId}-${Date.now()}`;
-  }  
+      ActualRhombusId = `${Number(extractNestedId) + 1 +'.'+outgoingEdges.length +1+'.'+'1'}`
+
+    }  
   const rhombusId = newNodeId;
   const leftRectId = `rect-${extractNodeIdPart(rhombusId)}.1.1-${Date.now()}`;
+  let actualIdOfLeftRect = `${extractNodeIdPart(rhombusId)}.1.1`;
   const rightRectId = `rect-${extractNodeIdPart(rhombusId)}.2.1-${Date.now()}`;
+  let actualIdOfrightRect = `${extractNodeIdPart(rhombusId)}.2.1`;
+
   const endDotId = `dot.end-dot.end-r.${rhombusId}-${Date.now()}`;
+    let actualIdOfEndDot = `dot.end`;
+
   const newNodes = [
     {
       id: rhombusId,
@@ -498,21 +609,25 @@ const addNewNodeFromRhombus=(type='rectangle')=>{
         prevNodeId: activeRhombusId.value,
         nextNodeId: leftRectId,
         parent: activeRhombusId.value,
-        child:[
-          leftRectId,
-          rightRectId
-          //we can in this add 
-        ] ,
+       child: 
+          {
+            '1':[leftRectId], 
+            '2':[rightRectId]
+          },
         endDotId:endDotId,
         nextNodeofRhombus:targetNodeId,  //
         BranchfromRhombus:true ,
         actualNextNode: leftRectId,
-        actualPrevNode: activeRhombusId.value
+        actualPrevNode: activeRhombusId.value,
+        actualId:ActualRhombusId
       //next =>child,
       //prev:parent
       },
       
-      position: newRhombusPosition,
+      position:  {
+    x: rhombusNode.position.x + 200,
+    y: rhombusNode.position.y + (outgoingEdges.length * 60)
+  },
     },
     {
       id: leftRectId,
@@ -522,14 +637,16 @@ const addNewNodeFromRhombus=(type='rectangle')=>{
         prevNodeId: rhombusId,
         nextNodeId: endDotId,//must be dot-node
         parent: rhombusId,
-        child:[] ,
+        child:null ,
         endDotId:null,
         nextNodeofRhombus:targetNodeId,
         BranchfromRhombus:true ,
         actualNextNode: targetNodeId,
-        actualPrevNode: rhombusId
+        actualPrevNode: rhombusId ,
+          actualId: actualIdOfLeftRect//11
+
       },
-      position: { x: newRhombusPosition.x - 100, y: newRhombusPosition.y + 100 },
+      position: { x: newNodePosition.x - 100, y: newNodePosition.y + 100 },
     },
     {
       id: rightRectId,
@@ -538,14 +655,15 @@ const addNewNodeFromRhombus=(type='rectangle')=>{
         prevNodeId: rhombusId,
         nextNodeId: endDotId,//must be dot-node
         parent: rhombusId,
-        child:[] ,
+        child:null ,
         endDotId:null,//for rhombus only
         nextNodeofRhombus:targetNodeId,//for rhombus child only
         BranchfromRhombus:true,
         actualNextNode: targetNodeId,
-        actualPrevNode: rhombusId
+        actualPrevNode: rhombusId,
+          actualId: actualIdOfrightRect//11
      },
-      position: { x: newRhombusPosition.x + 100, y: newRhombusPosition.y + 100 },
+      position: { x: newNodePosition.x + 100, y: newNodePosition.y + 100 },
     },
     {
     id: endDotId,
@@ -554,15 +672,16 @@ const addNewNodeFromRhombus=(type='rectangle')=>{
           prevNodeId: rhombusId,
           nextNodeId: targetNodeId,//must be dot-node
           parent: rhombusId,
-          child:[] ,
+          child:null ,
           label: '', 
           endDotId:null,//for rhombus only 
           nextNodeofRhombus:targetNodeId,//for rhombus child only
           BranchfromRhombus:true,
           actualNextNode: targetNodeId,
-          actualPrevNode: rightRectId   //for rhombus child only  
+          actualPrevNode: rightRectId,//for rhombus child only 
+          actualId: actualIdOfEndDot//11    
         },
-          position: { x: newRhombusPosition.x, y: newRhombusPosition.y +235},//+25
+          position: { x: newNodePosition.x, y: newNodePosition.y +235},//+25
           class: 'end-dot-node',
           style: {
             width: '20px',
@@ -653,10 +772,15 @@ const addNewNodeFromRhombus=(type='rectangle')=>{
     }
   ];
   removeEdges([activeEdgeId.value]);
+                // adjustPostions(newNodes[0])
+
   addNodes(newNodes);
   addEdges(newEdges);
   workflowStore.addNodes(newNodes);
   workflowStore.addEdges(newEdges);
+  console.log('workflowStore.nodes',workflowStore.nodes)
+    // console.log('workflowStore.nodes',workflowStore.nodes)
+
   }
  
   // After adding nodes and edges:
@@ -664,6 +788,7 @@ const addNewNodeFromRhombus=(type='rectangle')=>{
   activeRhombusId.value = null;
   nextTick(() => fitView());
 }
+
 const startEditingNode = (nodeId, currentLabel = '') => {
   editingNodeId.value = nodeId;
   nodeLabel.value = currentLabel;
@@ -907,21 +1032,32 @@ const addNewNode = (fromRhombus = false,type='rectangle')=>{
       extractNestedId,
       centerX,
       centerY,
-      actualSourceNode ;
+      actualSourceNode ,
+      actualId;
+    //check if found active edge
     if (!activeEdgeId.value) return;
+    //check if edge found  workflowStore.edges
     edge = workflowStore.edges.find(e => e.id === activeEdgeId.value);
     if (!edge) return;
+    console.log('edge',edge)
+        console.log(' workflowStore.nodes.find(n => n.id === edge.source)', workflowStore.nodes.find(n => n.id === edge.source))
+
+    //Get sourceNode and targetNode
     sourceNode = workflowStore.nodes.find(n => n.id === edge.source);//
     targetNode = workflowStore.nodes.find(n => n.id === edge.target);
+    ////
     centerX = (sourceNode.position.x + targetNode.position.x) / 2;
     centerY = (sourceNode.position.y + targetNode.position.y) / 2;
+
+    //get actual source node 
     if(sourceNode.type=='endDot'){
-        actualSourceNode = sourceNode.data.prevNodeId // get rhombusNode id
+        actualSourceNode = sourceNode.data.parent // get rhombusNode id //
+          extractNestedId = actualSourceNode;
     }else{
       actualSourceNode = extractNodeIdPart(sourceNode.id);// e.g., "2.1.1"
+        extractNestedId = actualSourceNode;
     }
-    extractNestedId = actualSourceNode; // e.g., "2.1.1"
-    
+    //check if user ad new node after endDot , is id is correct or not
     if (extractNestedId.includes('.')) {
         const parts = extractNestedId.split('.'); // e.g., ["2", "1", "1"]
         if (parts.length) {
@@ -935,15 +1071,18 @@ const addNewNode = (fromRhombus = false,type='rectangle')=>{
             newAcualNode =finalNodeId;
             newNodeId = type=='rectangle'?`rect-${finalNodeId}-${Date.now()}`:
             `rhombus-${finalNodeId}-t.${targetNode.id}-${Date.now()}`;
+            actualId= finalNodeId  
         }
     } else {
         prevId = extractNestedId;
         newAcualNode = Number(extractNestedId) + 1;
         newNodeId = type=='rectangle'?`rect-${Number(extractNestedId) + 1}-${Date.now()}`:
         `rhombus-${Number(extractNestedId) + 1}-t.${targetNode.id}-${Date.now()}`;
+        actualId= `${Number(extractNestedId) + 1}`  
+        console.log("actualId",actualId)
+
     }
-    //remove old empty edges node
-    removeEdges([activeEdgeId.value]);  
+    //Get these nextNodeOfRect & prevNodeOfRect to show the text on edge
     let nextNodeOfRect =edge.target.type=='endDot' &&
       workflowStore.edges.filter((edgee)=>edgee.source == edge.target).length?
       workflowStore.edges.filter((edgee)=>edgee.source == edge.target).length[0].target:
@@ -951,20 +1090,24 @@ const addNewNode = (fromRhombus = false,type='rectangle')=>{
 
       let prevNodeOfRect =edge.source.type=='endDot' &&
       workflowStore.edges.filter((edgee)=>edgee.target == edge.source).length?
-      workflowStore.edges.filter((edgee)=>edgee.source == edge.target).length[0].source:
-      edge.target;
+      workflowStore.edges.filter((edgee)=>edgee.target == edge.source).length[0].source:
+      edge.source;
+    //remove old empty edges node
+    removeEdges([activeEdgeId.value]);  
+
     if(type == 'rectangle'){
      //if we add child attributes to store make recursive function to check id of node
       let nodeParent ;
       if(sourceNode.type=='rhombus'){
         nodeParent = sourceNode.id
       }else if(sourceNode.type=='endDot'){
-        nodeParent = sourceNode.data.parent  
+        //get parent of its rhombus
+        nodeParent =   workflowStore.nodes.filter((node)=>node.id == sourceNode.data.parent)[0].data.parent  
       }else {
         nodeParent = sourceNode.data.parent  
       }
 
-        const newNode = {  
+      const newNode = {  
         id: newNodeId,
         type: 'rectangle',
         data: {
@@ -974,17 +1117,23 @@ const addNewNode = (fromRhombus = false,type='rectangle')=>{
           actualNextNode:nextNodeOfRect,
           actualPrevNode:prevNodeOfRect,
           parent: nodeParent,//if its parent == ''
-          child:[] ,
+          child:null ,
           endDotId:null,//for rhombus only 
           nextNodeofRhombus:null,//for rhombus child only
-          BranchfromRhombus:true,   //for rhombus child only  
+          BranchfromRhombus:true,
+          actualId: actualId//11       //for rhombus child only  
 
         },
+        
           position: {
-            x: (sourceNode.id=='1'?sourceNode.position.x-39:sourceNode.position.x),
-            y: sourceNode.position.y+75
+            x: (sourceNode.id=='1'?sourceNode.position.x-39
+            :(sourceNode.type='endDot'?sourceNode.position.x-47:  
+             (newNode.type='rectangle'?sourceNode.position.x-17: sourceNode.position.x))),
+            y: sourceNode.position.y+60
         }
       }
+      console.log("sourceNode",sourceNode)
+
       const newEdges = [
         {
           id: `edge-${edge.source}-${newNodeId}-${Date.now()}`,
@@ -1007,19 +1156,26 @@ const addNewNode = (fromRhombus = false,type='rectangle')=>{
           labelBgStyle: {fill: 'rgb(246,246,246)',rx: '50%', ry: '50%', width: '20px',height: '20px', transform: 'translate(-3px, 5px)'}
         }
       ];
-      adjustPostionsAndIds(newNode);
+      // adjustPostionsAndIds(newNode);
+      // adjustPostions(newNode)
       addNodes([newNode]);
-  workflowStore.addNodes([newNode]);
+      workflowStore.addNodes([newNode]);
       addEdges(newEdges);
-      // workflowStore.addNodes([newNode]);
       workflowStore.addEdges(newEdges);
-        // adjustNodePositions(newNode, 'down',0,10);
+        console.log('workflowStore.nodes nodes',workflowStore.nodes)
+    // console.log('workflowStore.nodes',workflowStore.nodes)
+
+  
     } else {
         const rhombusId = newNodeId;
         const leftRectId = `rect-${extractNodeIdPart(rhombusId)}.1.1-${Date.now()}`;
+        let actualIdOfLeftRect = `${extractNodeIdPart(rhombusId)}.1.1`;
         const rightRectId = `rect-${extractNodeIdPart(rhombusId)}.2.1-${Date.now()}`;
+        let actualIdOfrightRect = `${extractNodeIdPart(rhombusId)}.2.1`;
         const endDotId = `dot.end-dot.end-r.${rhombusId}-${Date.now()}`;
-        console.log("dge.target",edge.target)
+        let actualIdOfEndDot = `dot.end`;
+
+
         const newNodes = [
           {
             id: rhombusId,
@@ -1027,10 +1183,11 @@ const addNewNode = (fromRhombus = false,type='rectangle')=>{
             data: { 
               label: '+',
               parent: null,
-              child: [ 
-                leftRectId, 
-                rightRectId
-              ],
+              child: 
+              {
+                '1':[leftRectId], 
+                '2':[rightRectId]
+              },
               endDotId:endDotId,
               prevNodeId: sourceNode.id,
               nextNodeId: leftRectId,
@@ -1038,6 +1195,8 @@ const addNewNode = (fromRhombus = false,type='rectangle')=>{
               actualPrevNode:prevNodeOfRect,//must be dot-node
               nextNodeofRhombus:targetNode.id,//for rhombus only
               BranchfromRhombus:false,   //for rhombus child only  
+              actualId: actualId//11    
+
           },
          
             position:  {  x:sourceNode.id=='1'&&targetNode.id=='end'?
@@ -1049,7 +1208,7 @@ const addNewNode = (fromRhombus = false,type='rectangle')=>{
             data: { 
               label: 'Yes', 
               parent:  rhombusId, 
-              child: [],
+              child: null,
               endDotId:null,
               prevNodeId: rhombusId,
               nextNodeId: endDotId,
@@ -1057,6 +1216,7 @@ const addNewNode = (fromRhombus = false,type='rectangle')=>{
               actualPrevNode:rhombusId,
               nextNodeofRhombus:targetNode.id,//for rhombus only
               BranchfromRhombus:true,   //for rhombus child only  
+              actualId:actualIdOfLeftRect
             },
             position: { x: centerX - 100, y: centerY + 140 },
           },
@@ -1066,7 +1226,7 @@ const addNewNode = (fromRhombus = false,type='rectangle')=>{
             data: { 
               label: 'No', 
               parent:  rhombusId, 
-              child: [],
+              child: null,
               endDotId:null,
               prevNodeId: rhombusId,
               nextNodeId: endDotId,
@@ -1074,6 +1234,7 @@ const addNewNode = (fromRhombus = false,type='rectangle')=>{
               actualPrevNode:rhombusId,
               nextNodeofRhombus:targetNode.id,//for rhombus only
               BranchfromRhombus:true,   //for rhombus child only  
+              actualId:actualIdOfrightRect
            },
             position: {  x:sourceNode.id=='1'&&targetNode.id=='end'? centerX + 40:sourceNode.position.x+90 , y: centerY + 140 },
           },
@@ -1084,7 +1245,7 @@ const addNewNode = (fromRhombus = false,type='rectangle')=>{
               label: '',
               parent:  rhombusId,
 
-              child: [],
+              child: null,
               endDotId:null,
               prevNodeId: rightRectId,
               nextNodeId: targetNode.id,
@@ -1092,6 +1253,7 @@ const addNewNode = (fromRhombus = false,type='rectangle')=>{
               actualPrevNode: rightRectId,
               nextNodeofRhombus: targetNode.id,//for rhombus only
               BranchfromRhombus:true,   //for rhombus child only  
+              actualId:actualIdOfEndDot
             },
             position: {x:sourceNode.id == '1'? sourceNode.position.x+8:centerX+23,  y: sourceNode.position.y+320 },
             class: 'end-dot-node',
@@ -1157,12 +1319,16 @@ const addNewNode = (fromRhombus = false,type='rectangle')=>{
           }
         ];
         removeEdges([activeEdgeId.value]);
-        adjustPostionsAndIds(newNodes[0]);
+              adjustPostions(newNodes[0])
+
+        // adjustPostionsAndIds(newNodes[0]);
         addNodes(newNodes);
                 workflowStore.addNodes(newNodes);
 
         addEdges(newEdges);
         workflowStore.addEdges(newEdges);
+                console.log('workflowStore.nodes nodes when rhombus',workflowStore.nodes)
+
     }
     showShapeOptions.value = false;
     activeEdgeId.value = null;
@@ -1180,10 +1346,35 @@ onInit((instance) => {
   workflowStore.setEdges(instance.getEdges.value);
   instance.fitView();
 });
+function getParents(id) {
+    const parts = id.split('.');
+    const parents = [];
+    
+    if (parts.length === 0) return parents;
+    
+    parents.push(parts[0]);
+    
+    const remainingParts = parts.slice(1);
+    
+    const parentParts = remainingParts.slice(0, -2);
+    
+    let currentParent = parents[0];
+    for (let i = 0; i < parentParts.length; i += 2) {
+        if (i + 1 < parentParts.length) {
+            currentParent += '.' + parentParts[i] + '.' + parentParts[i + 1];
+            parents.push(currentParent);
+        }
+    }
+    
+    return parents;
+}
+
+
 </script>
 
 <template>
   <div>
+
 <VueFlow
   v-model:nodes="nodes"
   v-model:edges="edges"
