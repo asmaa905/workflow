@@ -2,8 +2,6 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import WorkflowEditor from '@/components/WorkflowEditor.vue';
-// import NewFlowchart from '@/components/newFlowchart.vue';
-// import WorkflowEditorAllEdit from '@/components/WorkflowEditorAllEdit.vue';
 import FlowchartEditor from '@/components/FlowchartEditor.vue';
 
 const router = useRouter();

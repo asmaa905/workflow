@@ -326,3 +326,29 @@ text.vue-flow__edge-text {
     textLength: 300;
     lengthAdjust: 5;
 }
+
+/* Add this to your style section */
+.basic-flow canvas {
+    /* background-color: red !important;
+    fill: red !important; */
+
+}
+
+/* Add this to your style section */
+.watermark {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    color: red;
+    fill: blue;
+    stroke: #2c3e50;
+
+}
+
+/* Add this to your style section */
+.basic-flow canvas div div * {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+
+}
