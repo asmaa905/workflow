@@ -7,7 +7,7 @@ import FlowchartEditor from '@/components/FlowchartEditor.vue';
 const router = useRouter();
 const workflow = ref({
   name: '',
-  description: '',
+  nodesCount: '',
   nodes: [],
   edges: []
 });
@@ -24,7 +24,7 @@ function saveWorkflow() {
   const newWorkflow = {
     id: newId,
     name: workflow.value.name,
-    description: workflow.value.description,
+    nodesCount: workflow.value.nodesCount,
     nodes: workflow.value.nodes,
     edges: workflow.value.edges
   };
@@ -60,12 +60,10 @@ function updateDiagramData({ nodes, edges }) {
                 placeholder="Type workflow name" required>
             </div>
             <div class="sm:col-span-2">
-              <label for="description" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                Description
+              <label for="nodesCount" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                nodes Count
               </label>
-              <textarea v-model="workflow.description" id="description" rows="4"
-                class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                placeholder="Workflow description" required></textarea>
+             <p>{{ workflow.nodesCount }}</p>
             </div>
           </div>
           
@@ -76,7 +74,7 @@ function updateDiagramData({ nodes, edges }) {
             <FlowchartEditor />
           </div>
           
-          <button type="submit" class="inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-white bg-blue-700 rounded-lg focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900 hover:bg-blue-800">
+          <button type="submit" class="mt-28 inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-white bg-blue-700 rounded-lg focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900 hover:bg-blue-800">
             Save Workflow
           </button>
         </form>

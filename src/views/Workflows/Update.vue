@@ -9,7 +9,7 @@ const route = useRoute();
 const workflow = ref({
   id: null,
   name: '',
-  description: '',
+  nodesCount: '',
   nodes: [],
   edges: []
 });
@@ -23,7 +23,7 @@ onMounted(() => {
     workflow.value = {
       id: foundWorkflow.id,
       name: foundWorkflow.name,
-      description: foundWorkflow.description,
+      nodesCount: foundWorkflow.nodesCount,
       nodes: foundWorkflow.nodes ? JSON.parse(JSON.stringify(foundWorkflow.nodes)) : [],
       edges: foundWorkflow.edges ? JSON.parse(JSON.stringify(foundWorkflow.edges)) : []
     };
@@ -42,7 +42,7 @@ function saveWorkflow() {
     savedWorkflows[index] = {
       id: workflow.value.id,
       name: workflow.value.name,
-      description: workflow.value.description,
+      nodesCount: workflow.value.nodesCount,
       nodes: JSON.parse(JSON.stringify(workflow.value.nodes)),
       edges: JSON.parse(JSON.stringify(workflow.value.edges))
     };
@@ -82,13 +82,11 @@ const updateDiagramData = debounce(({ nodes, edges }) => {
                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" 
                 placeholder="Type workflow name" required>
             </div>
-            <div class="sm:col-span-2">
-              <label for="description" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                Description
+            <div class="sm:col-span-2 mb-5">
+              <label for="nodesCount" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                nodes Count
               </label>
-              <textarea v-model="workflow.description" id="description" rows="4"
-                class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                placeholder="Workflow description" required></textarea>
+              <p id="nodesCount">{{ workflow.nodesCount }}</p>
             </div>
           </div>
           
@@ -98,10 +96,10 @@ const updateDiagramData = debounce(({ nodes, edges }) => {
             </label>
       
               <WorkflowEditor 
-      :initial-nodes="workflow.nodes" 
-      :initial-edges="workflow.edges"
-      @update="updateDiagramData"
-    />
+                :initial-nodes="workflow.nodes" 
+                :initial-edges="workflow.edges"
+                @update="updateDiagramData"
+              />
 
           </div>
           

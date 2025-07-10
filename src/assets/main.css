@@ -235,7 +235,7 @@ body,
     font-family: 'JetBrains Mono', monospace;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    text-align: center;
+    /* text-align: center; */
     color: #2c3e50;
 }
 
@@ -269,7 +269,7 @@ body,
     box-shadow: 5px 5px 10px 2px #00000040
 }
 
-.dnd-flow aside .description {
+.dnd-flow aside .nodesCount {
     margin-bottom: 10px
 }
 

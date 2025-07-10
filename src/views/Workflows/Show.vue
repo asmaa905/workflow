@@ -6,7 +6,7 @@ import WorkflowEditor from '@/components/WorkflowEditor.vue';
 const route = useRoute();
 const workflow = ref({
   name: '',
-  description: '',
+  nodesCount: '',
   nodes: [],
   edges: []
 });
@@ -19,7 +19,7 @@ onMounted(() => {
   if (foundWorkflow) {
     workflow.value = {
       name: foundWorkflow.name,
-      description: foundWorkflow.description,
+      nodesCount: foundWorkflow.nodesCount,
       nodes: foundWorkflow.nodes || [],
       edges: foundWorkflow.edges || []
     };
@@ -43,7 +43,7 @@ onMounted(() => {
         <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
           <h2 class="text-xl font-semibold mb-2">{{ workflow.name }}</h2>
           <p class="text-gray-600 dark:text-gray-300 mb-4">
-            {{ workflow.description }}
+            {{ workflow.nodesCount }}
           </p>
           
           <div style="height: 500px; width: 100%" class="border rounded-lg">
